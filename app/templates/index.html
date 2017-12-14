@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block body %}
+
+{% if not session.username %}
+
+<h5>v1.0 Scope</h5>
+<p>This tool employs various data analysis techniques to compare attributes in the BioSamples Database and provide relevant information to human curators to help them make curation decisions. Specifically, the tool is designed to find incorrect and erroneous attributes in the database. By presuming that a correct attribute already exists the tool looks for similar pairs of attributes and attempts to identify appropriate 'merges'.</p>
+
+<h5>v1.0 Development</h5>
+<p>This tool is in early development. This first implementation is designed to generate training data to inform the development of smarter curation algorithms. Curating the value information in the BioSamples Database is out of the current scope but the inbuilt techniques herein can be extended to this portion of the data in the future. The tool currently uses pairwise comparisons to find erroneous information but one of the next steps will be to evaluate each attribute on an individual basis. Training data will be used to inform the development of this functionality.</p>
+<p>Currently, only lexically similar attribute pairs are fed into the analysis pipeline. Whilst lexically similar pairs most likely represent the largest number of erroneous attributes, this technique misses interesting non-lexical merges. The training data captured in this first round of curation will provide insight into other indicators for pair matching which can be later implemented across the dataset.</p>
+<hr>
+
+{% else %}
+
+<h2>Welcome {{ username }} </h2>
+
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+			<button id="getGoing" class="btn btn-basic btn-block" >Launch Pairwise Attribute Curator</button>
+		</div>
+	</div>
+</div>
+
+
+
+
+<script type="text/javascript">
+    document.getElementById("getGoing").onclick = function () {
+        location.href = "{{ url_for('attribute_curator_home', username=session.username)}}";
+    };
+</script>
+
+
+{% include "graph_overview.html" %}
+
+{% endif %}
+
+{% endblock %}

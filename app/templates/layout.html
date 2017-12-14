@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+      <meta charset="utf-8">
+      <meta name="author" content="Matthew Green">
+
+      <title>BioSamples Curation Tool</title>
+
+      <!-- Bootstrap core CSS -->
+      <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+      <!-- <link href="/static/bootstrap-3.3.7-dist/css/bootstrap.min.css" rel="stylesheet" media="screen"> -->
+
+      
+
+      <!-- Custom styles for this template -->
+      <link href="/static/css/style.css" rel="stylesheet">
+
+      <!-- <script src="/static/jquery-3.2.1.js"></script> -->
+      <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> -->
+
+      <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+
+      <script src="/static/vendor/toc.min.js"></script>
+
+
+
+      <!-- Font Awsome -->
+      <link rel="stylesheet" href="/static/font-awesome-4.7.0/css/font-awesome.min.css">
+
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+      <a href="{{ url_for('index') }}" class="navbar-left"><img src="/static/images/curationIcon.svg"></a>
+      <a class="navbar-brand" href="{{ url_for('index') }}">BioSamples Curation Tool</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto">
+<!--           <li class="nav-item active">
+            <a class="nav-link" href="{{ url_for('index') }}">Home <span class="sr-only">(current)</span></a>
+          </li> -->
+          {% if not session.username %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('attribute_curator_home', username=session.username) }}">Pairwise Attribute Curator</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('documentation') }}">Documantation</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+          </li>
+          {% endif %}
+
+        </ul>
+       <!--  <form class="form-inline my-2 my-lg-0">
+          <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+        </form> -->
+      </div>
+    </nav>
+
+
+      <main role="main" class="container">
+
+        <div class="metanav">{% if session.username %}{% endif %}</div>
+        <br>
+        {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+        {% endfor %}
+        {% block body %}
+        {% endblock %}
+
+      </main>
+
+    <footer class="mastfoot">
+      <div class="container">
+        <div class="inner">
+          <p class="text-center">Funded by the 
+            <a href="https://www.ebi.ac.uk/about/people/helen-parkinson">
+            Parkinson team</a>, made by hewgreen 
+            <a href="https://twitter.com/hewgreen"><i class="fa fa-lg fa-twitter" aria-hidden="true"></i></a>
+            <a href="https://github.com/hewgreen"><i class="fa fa-lg fa-github" aria-hidden="true"></i></a>
+            <a href="https://www.linkedin.com/in/hewgreen/"><i class="fa fa-lg fa-linkedin" aria-hidden="true"></i></a>
+            <a href="https://scholar.google.co.uk/citations?user=1k1IKZYAAAAJ&hl=en&oi=sra"><i class="fa fa-lg fa-google" aria-hidden="true"></i></a>
+            <!-- <a href="https://www.researchgate.net/profile/Matthew_Green6"><i class="fa fa-lg fa-book" aria-hidden="true"></i></a> -->
+          </p>
+        </div>
+      </div>
+    </footer>
+
+  </body>
+
+</html>
+
+
+
+
+

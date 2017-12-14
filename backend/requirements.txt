@@ -1,0 +1,77 @@
+# requirements
+
+## assumed to be present:
+
+### python3 itself
+### sys
+### os
+### math
+### re
+### timeit
+
+## third party:
+
+multiprocessing
+requests
+string
+itertools
+json
+collections
+pprint as pp
+time
+functools
+pathlib
+pandas as pd
+glob
+from operator import add
+numpy as np
+
+### Lexical module
+
+future
+pyenchant
+fuzzywuzzy
+validator
+progressbar2
+six
+nltk  # note other modules needed
+matplotlib
+tqdm
+datetime
+
+### Analysis module
+
+networkx as nx
+matplotlib import pylab
+matplotlib.pyplot as plt
+from py2neo import Node, Relationship, Graph, Path, authenticate
+argparse
+
+#### Value Script before rewrite
+
+csv
+ast
+jellyfish
+scipy.stats as stats
+dateutil.parser import parse
+from itertools import combinations, product
+jellyfish.\_jellyfish as py\_jellyfish
+
+
+#### Cluster Script
+
+from functools import wraps
+seaborn as sns
+plotly.plotly as py
+plotly.figure_factory as ff
+plotly 
+prince
+sklearn
+sklearn.decomposition import PCA
+scipy.spatial.distance import pdist
+sklearn.cluster import AffinityPropagation
+scipy.cluster.hierarchy import dendrogram, linkage, cophenet, fcluster
+
+
+
+

@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block body %}
+
+{% if session.username %}
+
+<h5>Pairwise Attribute Curator (<b>{{ username }}</b>)</h5>
+
+{% if all_pairs_curated > 0 %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+			<p>So far you have made decisions on <b>{{ all_pairs_curated }}</b> attributes. You suggested merging <b>{{ TOTAL_MERGE }}/{{ all_pairs_curated }}</b> attributes and decided not to merge <b>{{ SUGGESTED_NOMERGE_decisions }}/{{ all_pairs_curated }}</b> attributes.</p>
+		</div>
+		<div class="col-md-3 text-center row">
+				<form action="{{ url_for('attribute_curation_pair', pair_id=pair_id, username=username) }}" method="POST">
+			    	<input class="btn btn-primary btn-lg text-center" id="start_button" type="submit" name="initial" value="Continue Curating">
+				</form>
+		</div>
+
+		<div class="col-md-3 text-center row">
+			<button class="btn btn-default btn-sm text-center" id="settings">
+				  <i class="fa fa-cog fa-3x" aria-hidden="true"></i>
+			</button>
+
+
+			<div class="col-xs-12">
+				<div id="panel1" class="panel panel-primary" style="display:none">
+					<div class="panel-heading">
+					</div>
+					<div class="panel-body">
+						<form action="{{ url_for('attribute_curator_home', username=username) }}" method="POST">
+							<input class="btn btn-danger btn-sm" id="wipe" type="submit" name="wipeData" value="Wipe ALL curations">
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>	
+	</div>
+</div>
+
+{% else %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+			<p>Welcome to the Pairwise Attribute Curator. As you make suggestions you can check back here to see your progress. Good luck!</p>
+		</div>
+		<div class="col-md-6 text-center row">
+				<form action="{{ url_for('attribute_curation_pair', pair_id=pair_id, username=username) }}" method="POST">
+		    		<input class="btn btn-primary btn-lg text-center" id="start_button" type="submit" name="initial" value="Begin Curating">
+				</form>
+		</div>
+	</div>
+</div>
+{% endif %}
+
+
+
+
+
+<script>
+$(document).ready(function() {
+
+$('#settings').on('click', function() {
+	$('#panel1').toggle();
+});
+
+$('#wipe').click(function() {
+    return window.confirm("Are you sure? All of your curations will be removed!");
+});
+
+})
+</script>
+
+
+
+
+
+
+  {% endif %}
+{% endblock %}

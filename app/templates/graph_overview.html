@@ -1,0 +1,94 @@
+  <ul>
+    <h6><span  class="line-center bigger">Current data status</span></h6>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 bigger">
+          <p>Pairs of attributes in database: <b>{{ num_pairs }}</b></p>
+        </div>
+        <div class="col-md-6 bigger">
+          <p>Samples in database: <b>{{ num_samples }}</b></p>
+        </div>
+      </div>
+    </div>
+
+
+
+    <h6><span  class="line-center">Data analysis progress</span></h6>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <p><b>Lexical pair filtering {{ '%0.0f'| format(lexical_num_processed / num_pairs * 100) }}%</b></p>
+            <div class="progress">
+              <div class="progress-bar" role="progressbar" aria-valuenow="{{ '%0.0f'| format(lexical_num_processed / num_pairs * 100) }}"
+              aria-valuemin="0" aria-valuemax="100" style="width:{{ '%0.0f'| format(lexical_num_processed / num_pairs * 100) }}%">
+              </div>
+            </div>
+            <p><b>{{ lexical_num_processed }}</b>/{{ num_pairs }}</p>
+        </div>
+
+        <div class="col-md-3">
+          <p><b>Pair value comparisons {{ '%0.0f'| format(values_num_processed / num_pairs * 100) }}%</b></p>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuenow="{{ '%0.0f'| format(values_num_processed / num_pairs * 100) }}"
+                aria-valuemin="0" aria-valuemax="100" style="width:{{ '%0.0f'| format(values_num_processed / num_pairs * 100) }}%">
+                </div>
+            </div>
+            <p><b>{{ values_num_processed }}</b>/{{ num_pairs }}</p>
+        </div>
+
+
+        <div class="col-md-3">
+          <p><b>Coexistance calculations {{ '%0.0f'| format(coexistance_num_processed / num_pairs * 100) }}%</b></p>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuenow="{{ '%0.0f'| format(coexistance_num_processed / num_pairs * 100) }}"
+                aria-valuemin="0" aria-valuemax="100" style="width:{{ '%0.0f'| format(coexistance_num_processed / num_pairs * 100) }}%">
+                </div>
+            </div>
+            <p><b>{{ coexistance_num_processed }}</b>/{{ num_pairs }}</p>
+        </div>
+
+
+        <div class="col-md-3">
+          <p><b>Clustering calculations {{ '%0.0f'| format(autocluster_num_processed / num_pairs * 100) }}%</b></p>
+
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuenow="{{ '%0.0f'| format(autocluster_num_processed / num_pairs * 100) }}"
+                aria-valuemin="0" aria-valuemax="100" style="width:{{ '%0.0f'| format(autocluster_num_processed / num_pairs * 100) }}%">
+                </div>
+            </div>
+            <p><b>{{ autocluster_num_processed }}</b>/{{ num_pairs }}</p>
+        </div>
+
+
+      </div>
+    </div>
+
+
+    <h6><span  class="line-center">Latest data updates</span></h6>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <p><b>Lexical pair filtering</b></p>
+          <p>{{ lexical_last_update_date }}</b> at {{ lexical_last_update_time }}</p>
+        </div>
+        <div class="col-md-3">
+          <p><b>Pair value comparisons</b></p>
+          <p>{{ values_last_update_date }} at {{ values_last_update_time }}</p>
+        </div>
+        <div class="col-md-3">
+          <p><b>Coexistance calculations</b></p>
+          <p>{{ coexistance_last_update_date }} at {{ coexistance_last_update_time }}</p>
+        </div>
+        <div class="col-md-3">
+          <p><b>Clustering calculations</b></p>
+          <p>{{ autocluster_last_update_date }} at {{ autocluster_last_update_time }}</p>
+        </div>
+
+
+    	</div>
+    </div>
+
+
+  </ul>

@@ -1,0 +1,270 @@
+{% extends "layout.html" %}
+{% block body %}
+
+{% if session.username %}
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 text-right">
+      <p>Pair ID in Neo4J <b>{{ pair_id }}</b></p>
+  </div>
+  </div>
+
+
+  <div class="row">
+    <div class="col-md-12">
+      <h6><span  class="line-center bigger">Should we merge attribute?</span></h6>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-5 text-center">
+        <h4>{{ bad_attribute }}</h4>
+    </div>
+    <div class="col-md-2 text-center">
+        into
+    </div>
+    <div class="col-md-5 text-center">
+        <h4>{{ good_attribute }}</h4>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <form action="{{ url_for('attribute_curation_pair', pair_id=pair_id, username=username) }}" method="POST">
+
+        <div class="row">
+          <div class="col-md-3 text-center">
+          <button class="btn btn-danger btn-block" type="submit" name="no_merge">
+            <i class="fa fa-thumbs-o-down fa-3x" aria-hidden="true"></i>
+          </button>
+          Don't merge
+          </div>
+
+
+          <div class="col-md-3 text-center">
+          <button class="btn btn-success btn-block" type="submit" name="merge">
+            <i class="fa fa-thumbs-o-up fa-3x" aria-hidden="true"></i>
+          </button>
+          Merge
+          </div>
+
+          <div class="col-md-3 text-center">
+          <button class="btn btn-primary btn-block" type="submit" name="reverse_merge">
+            <i class="fa fa-hand-o-left fa-3x" aria-hidden="true"></i>
+          </button>
+          Merge reverse
+          </div>
+
+          <div class="col-md-3 text-center">
+          <button class="btn btn-basic btn-block" type="submit" name="skip">
+            <i class="fa fa-step-forward fa-3x" aria-hidden="true"></i>
+          </button>
+          Skip
+          </div>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+{% if last_decision %}
+<div class="row">
+<kbd>N.B. previously, for this pair you decided: <b>{{ last_decision }}</b></kbd>
+</div>
+{% endif %}
+
+<div id="accordion" role="tablist" aria-multiselectable="true">
+
+
+
+  <div class="card">
+    <div class="card-header" role="tab" id="headingOne">
+      <h4 class="mb-0">
+        <a data-toggle="collapse" data-parent="#card" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+          Key Information
+        </a>
+      </h4>
+    </div>
+
+    <div id="collapseOne" class="collapse show" role="tabpanel" aria-labelledby="headingOne">
+      <div class="card-block">
+
+
+        <table class="table table-striped">
+          <tbody>
+            <tr>
+              <td>Samples containing attribute <b>{{ bad_attribute }}</b></td>
+              <td>{{ bad_facet_freq }}</td>
+            </tr>
+            <tr>
+              <td>Samples containing attribute <b>{{ good_attribute }}</b></td>
+              <td>{{ good_facet_freq }}</td>
+            </tr>
+    <!--         <tr>
+              <td>Levenshtein distance</td>
+              <td>{{ levenshtein }}</td>
+            </tr> -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+    <div class="card">
+    <div class="card-header" role="tab" id="headingOneA">
+      <h4 class="mb-0">
+        <a data-toggle="collapse" data-parent="#card" href="#collapseOneA" aria-expanded="true" aria-controls="collapseOneA">
+          Lexical Information
+        </a>
+      </h4>
+    </div>
+
+    <div id="collapseOneA" class="collapse show" role="tabpanel" aria-labelledby="headingOneA">
+      <div class="card-block">
+
+
+        <table class="table table-striped">
+          <tbody>
+            <tr>
+              <td>Lexical issue detection</td>
+              <td>{{ lexical_issues }}</td>
+            </tr>
+            {% if bad_words|length > 0 %}
+            <tr>
+              <td>Spelling errors</td>
+              <td>{{ bad_words }}</td>
+            </tr>
+            <tr>
+            {% endif %}
+              <td>CamelCase detected</td>
+              <td>{{ possible_camelCase }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header" role="tab" id="headingTwo">
+      <h4 class="mb-0">
+        <a data-toggle="collapse" data-parent="#card" href="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+          Coexistance Information
+        </a>
+      </h4>
+    </div>
+
+    <div id="collapseTwo" class="collapse" role="tabpanel" aria-labelledby="headingTwo">
+      <div class="card-block">
+
+
+        <table class="table table-striped">
+          <tbody>
+            <tr>
+                <td>Edge Weight</td>
+                <td>{{ edge_weight }}</td>
+            </tr>
+            <tr>
+                <td>Jaccard coefficient</td>
+                <td>{{ jaccard_coefficient }}</td>
+            </tr>
+            <tr>
+                <td>Degree of attribute <b>{{ good_attribute }}</b></td>
+                <td>{{ degree1 }}</td>
+            </tr>
+            <tr>
+                <td>Degree of attribute <b>{{ bad_attribute }}</b></td>
+                <td>{{ degree2 }}</td>
+            </tr>
+            <tr>
+                <td>Break Number</td>
+                <td>{{ break_no }}</td>
+            </tr>
+            <tr>
+                <td>Edge Total</td>
+                <td>{{ edge_total }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+  <div class="card">
+    <div class="card-header" role="tab" id="headingThree">
+      <h4 class="mb-0">
+        <a data-toggle="collapse" data-parent="#card" href="#collapseThree" aria-expanded="true" aria-controls="collapseThree">
+          Value Comparisons
+        </a>
+      </h4>
+    </div>
+
+    <div id="collapseThree" class="collapse" role="tabpanel" aria-labelledby="headingThree">
+      <div class="card-block">
+
+
+        <table class="table table-striped">
+          <tbody>
+            <tr>
+                <td>Type of match</td>
+                <td>{{ type_match }}</td>
+            </tr>
+            <tr>
+                <td>Exact matches</td>
+                <td>{{ exact_score }}</td>
+            </tr>
+            <tr>
+                <td>Most popular value for {{ good_attribute }}</td>
+                <td>{{ top_value1 }}</td>
+            </tr>
+            <tr>
+                <td>Most popular value for {{ bad_attribute }}</td>
+                <td>{{ top_value2 }}</td>
+            </tr>
+
+
+            {% if type_match == 'numeric match' %}
+
+            <tr>
+                <td>Magnitude difference</td>
+                <td>{{ magnitude_difference }}</td>
+            </tr>
+           
+            {% elif type_match == 'date match' %}
+
+            {% else %}
+
+            <tr>
+                <td>Jaro-Winkler Score</td>
+                <td>{{ jaro_score }}</td>
+            </tr>
+
+      {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+</div>
+
+
+
+
+
+  {% endif %}
+{% endblock %}

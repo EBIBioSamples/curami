@@ -1,0 +1,68 @@
+body {
+  padding-top: 5rem;
+}
+.starter-template {
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.line-center{
+    margin:0;padding:0 10px;
+    background:#fff;
+    display:inline-block;
+}
+
+h2{
+    padding-top: 40px;
+    padding-bottom: 10px;
+}
+
+h5{
+    padding-top: 40px;
+    padding-bottom: 40px;
+    text-align:left;
+    position:relative;
+}
+h6{
+    padding: 3rem 1.5rem;
+    text-align:center;
+    position:relative;
+    z-index:2;
+
+}
+h6:after{
+    content:"";
+    position:absolute;
+    top:50%;
+    left:0;
+    right:0;
+    border-top:solid 1px #A9A9A9;
+    z-index:-1;
+}
+.bigger{
+    font-size:160%;
+}
+
+
+form{
+    padding-top: 50px;
+    padding-bottom: 50px;
+
+}
+
+footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    font-size: 80%;
+} 
+
+.row {
+  display: flex;
+  align-items: center;
+} 
+
+#accordion{
+    padding-top: 30px;
+}
+
