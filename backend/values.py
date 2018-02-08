@@ -38,41 +38,6 @@ def get_timestamp():
 	timestamp = '{:%Y-%m-%d_%H-%M-%S}'.format(datetime.datetime.now())
 	return timestamp
 
-def dict_convert(input_file):
-
-	"""
-	Converts the raw json value data to a dict of dicts
-	"""
-
-	with open(input_file, 'r') as f:
-		data = ast.literal_eval(f.read())
-
-		main_dict = {}
-		for attribute in data:
-			key = next(iter(attribute))
-			# key_strip = lambda i: i.rstrip('_facet') if '_facet' in i else i
-			# # print(key_strip)
-			# key_stripped = key_strip(key)
-			if '_facet' in key:
-				key_stripped = key.replace('_facet', '')
-			else:
-				key_stripped = ''
-
-			value_list = attribute.get(key)
-			value_dict = {}
-
-			count = 0
-			for x in value_list:
-				if count % 2 == 0:
-					temp_key = x
-					count = count + 1
-				else:
-					value_dict[temp_key] = x
-					count = count + 1
-			main_dict[key_stripped] = value_dict
-
-		return main_dict
-
 def type_hasher(values_list1, values_list2):
 
 	"""
@@ -113,7 +78,7 @@ def type_hasher(values_list1, values_list2):
 					try:
 						parse(value)
 						type_date_f1 = type_date_f1 + 1
-					except (ValueError, AttributeError):
+					except (ValueError, AttributeError, OverflowError):
 						# add in regex for starts with no? to pick up measurements with units?
 						type_str_f1 = type_str_f1 + 1
 						pass
@@ -151,7 +116,7 @@ def type_hasher(values_list1, values_list2):
 					try:
 						parse(value)
 						type_date_f2 = type_date_f2 + 1
-					except (ValueError, AttributeError):
+					except (ValueError, AttributeError, OverflowError):
 						type_str_f2 = type_str_f2 + 1
 						pass
 
@@ -234,7 +199,7 @@ def type_hasher(values_list1, values_list2):
 
 	# values_list1.isdigit()
 
-def exact_value_scoring(values_list1, values_list2):
+def exact_value_scoring(values_list1, values_list2, values1, values2):
 
 	"""
 	pass this two lists of values from a pair of facets and it will
@@ -269,8 +234,24 @@ def fuzzy_value_scoring(values_list1, values_list2):
 	gets fuzzy pair match based on jarowinkler
 	returns dict with mean, stc and 0.9 qualtile
 	for jarowinkler, damerau levenshtein and hamming distances
+
+	If the number of values is too long (>1000) the most frequently
+	used values are taken as best representatives. This is to make
+	computation doable.
+
+
 	"""
 	if len(values_list1) > 0 and len(values_list2) > 0:
+
+		if len(values_list1) > 1000 or len(values_list2) > 1000:
+			if len(values_list1) > 1000:
+				x = value_info.get(facet1)
+				value_df = pd.DataFrame(columns=['frequency']).from_dict(x, orient = 'index').reset_index().rename(columns={"index": "value", 0: "frequency"}).sort_values(['frequency'], ascending=False).head(n=1000)
+				values_list1 = value_df['value'].tolist()
+			if len(values_list2) > 1000:
+				x = value_info.get(facet2)
+				value_df = pd.DataFrame(columns=['frequency']).from_dict(x, orient = 'index').reset_index().rename(columns={"index": "value", 0: "frequency"}).sort_values(['frequency'], ascending=False).head(n=1000)
+				values_list2 = value_df['value'].tolist()
 
 
 		if len(values_list1) > len(values_list2):
@@ -278,7 +259,8 @@ def fuzzy_value_scoring(values_list1, values_list2):
 			long_list = values_list1
 		else:
 			short_list = values_list1
-			long_list = values_list2		
+			long_list = values_list2
+	
 
 		# calculate the best fuzzy matches
 		best_match_list = []
@@ -310,14 +292,14 @@ def fuzzy_value_scoring(values_list1, values_list2):
 		hamming_distance_mean = df['hamming_distance'].mean()
 		hamming_distance_std = df['hamming_distance'].std()
 
-		results = {'jaro_distance_quant':jaro_distance_quant, \
-		'jaro_distance_mean':jaro_distance_mean, \
-		'jaro_distance_std':jaro_distance_std, \
-		'damerau_levenshtein_distance_quant':damerau_levenshtein_distance_quant, \
-		'damerau_levenshtein_distance_mean':damerau_levenshtein_distance_mean, \
-		'damerau_levenshtein_distance_std':damerau_levenshtein_distance_std, \
-		'hamming_distance_quant':hamming_distance_quant, \
-		'hamming_distance_mean':hamming_distance_mean, \
+		results = {'jaro_distance_quant':jaro_distance_quant,
+		'jaro_distance_mean':jaro_distance_mean,
+		'jaro_distance_std':jaro_distance_std,
+		'damerau_levenshtein_distance_quant':damerau_levenshtein_distance_quant,
+		'damerau_levenshtein_distance_mean':damerau_levenshtein_distance_mean,
+		'damerau_levenshtein_distance_std':damerau_levenshtein_distance_std,
+		'hamming_distance_quant':hamming_distance_quant,
+		'hamming_distance_mean':hamming_distance_mean,
 		'hamming_distance_std':hamming_distance_std}
 		# so a good match will be a high mean, low std. The quantile is prob better than mean.
 		
@@ -372,8 +354,210 @@ def magnitude_diff(type_hash, values_list1_num, values_list2_num):
 
 	return magnitude_difference
 
-# if __name__ == "__main__":
-def run():
+def do_calcs(facet1, facet2, missing_count, already_computed_count, newly_computed_count):
+
+	# get value info out of the dict (held in mem)
+	try:
+
+		values1 = value_info.get(facet1)
+		values2 = value_info.get(facet2)
+
+		pair_name = n["p"].properties['name']
+		
+		values_list1 = values1.keys()
+		values_list2 = values2.keys()
+
+	except AttributeError:
+		values_list1 = []
+		values_list2 = []
+
+
+	if len(values_list1) > 0 and len(values_list2) > 0: # check if the attributes have value information in input
+		skip = False
+	else:
+		skip = True
+		if len(values_list1) and len(values_list1) == 0:
+			print('MISSING INFORMATION IN INPUT')
+			print('------------------------------')
+			print(pair_name, 'skipped')
+			print(str(facet1), 'and', str(facet2), 'has no value information in values.csv')
+			outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
+			outF.write(pair_name+'skipped\n')
+			outF.write(str(facet1)+' and '+str(facet2)+' have no value information in values.csv\n\n')
+		elif len(values_list1) == 0:
+			print('MISSING INFORMATION IN INPUT')
+			print('------------------------------')
+			print(pair_name, 'skipped')
+			print(str(facet1), 'has no value information in values.csv')
+			outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
+			outF.write(pair_name+'skipped\n')
+			outF.write(str(facet1)+' has no value information in values.csv\n\n')
+		elif len(values_list2) == 0:
+			print('MISSING INFORMATION IN INPUT')
+			print('------------------------------')
+			print(pair_name, 'skipped')
+			print(str(facet2), 'has no value information in values.csv')
+			outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
+			outF.write(pair_name+'skipped\n')
+			outF.write(str(facet2)+' has no value information in values.csv\n\n')
+		else:
+			print('something went wrong..')
+			sys.exit()
+
+	
+	if not skip: # do the calculations
+
+
+		exact_score = exact_value_scoring(values_list1, values_list2, values1, values2)
+		type_hash_results = type_hasher(values_list1, values_list2)
+
+
+		type_hash = type_hash_results[0] 			# the pair's type match (numeric, string or date)
+		type_int_f1 = type_hash_results[1]			# no. of numeric matches in attribute 1
+		type_str_f1 = type_hash_results[2]			# no. of string matches in attribute 1
+		type_date_f1 = type_hash_results[3]			# no. of date matches in attribute 1
+		type_int_f2 = type_hash_results[4]			# no. of numeric matches in attribute 2
+		type_str_f2 = type_hash_results[5]			# no. of string matches in attribute 2
+		type_date_f2 = type_hash_results[6]			# no. of date matches in attribute 2
+		int_ratio1 = type_hash_results[7]			# ratio of numeric matches in attribute 1
+		str_ratio1 = type_hash_results[8]			# ratio of string matches in attribute 1
+		date_ratio1 = type_hash_results[9]			# ratio of date matches in attribute 1
+		int_ratio2 = type_hash_results[10]			# ratio of numeric matches in attribute 2
+		str_ratio2 = type_hash_results[11]			# ratio of string matches in attribute 2
+		date_ratio2 = type_hash_results[12]			# ratio of date matches in attribute 2
+		no_unique_values1 = type_hash_results[13]	# number of unique values in attribute 1
+		no_unique_values2 = type_hash_results[14]	# number of unique values in attribute 2
+		top_value1 = max(values1, key=lambda key: values1[key])
+		top_value2 = max(values2, key=lambda key: values2[key])
+
+
+		if type(type_hash) is str:
+			type_match = type_hash
+		else:
+			print('something going wrong with type_hash')
+			print(type(type_hash))
+			sys.exit()
+
+		print(type_match)
+		print(type_hash)
+
+		if type_match == 'numeric match':
+			values_list1_num = type_hash_results[15]
+			values_list2_num = type_hash_results[16]
+			magnitude_difference = magnitude_diff(type_hash, values_list1_num, values_list2_num)
+			fuzzy_scores = 'N.A.'
+			jaro_score = 'N.A.'
+			
+		elif type_match == 'date match':
+			magnitude_difference = 'N.A.'
+			fuzzy_scores = 'N.A.'
+			jaro_score = 'N.A.'
+			
+		else:
+			print(len(values_list1))
+			print(len(values_list2))
+			magnitude_difference = 'N.A.'
+			fuzzy_scores = fuzzy_value_scoring(values_list1, values_list2)
+			jaro_score = fuzzy_scores.get('jaro_distance_quant')
+			
+					
+
+		# put the calculations back into graph db
+
+		n['p']['exact_score'] = exact_score
+		n['p']['type_match'] = type_match
+		n['p']['magnitude_difference'] = magnitude_difference
+		n['p']['jaro_score'] = jaro_score
+		n['p']['type_int_f1'] = type_int_f1 			# no. of numeric matches in attribute 1
+		n['p']['type_str_f1'] = type_str_f1 			# no. of string matches in attribute 1
+		n['p']['type_date_f1'] = type_date_f1 			# no. of date matches in attribute 1
+		n['p']['type_int_f2'] = type_int_f2				# no. of numeric matches in attribute 2
+		n['p']['type_str_f2'] = type_str_f2				# no. of string matches in attribute 2
+		n['p']['type_date_f2'] = type_date_f2			# no. of date matches in attribute 2
+		n['p']['int_ratio1'] = int_ratio1				# ratio of numeric matches in attribute 1
+		n['p']['str_ratio1'] = str_ratio1				# ratio of string matches in attribute 1
+		n['p']['date_ratio1'] = date_ratio1				# ratio of date matches in attribute 1
+		n['p']['int_ratio2'] = int_ratio2				# ratio of numeric matches in attribute 2
+		n['p']['str_ratio2'] = str_ratio2				# ratio of string matches in attribute 2
+		n['p']['date_ratio2'] = date_ratio2				# ratio of date matches in attribute 2
+		n['p']['no_unique_values1'] = no_unique_values1	# number of unique values in attribute 1
+		n['p']['no_unique_values2'] = no_unique_values2	# number of unique values in attribute 2
+		n['p']['top_value1'] = top_value1				# most frequently occuring value in attribute 1
+		n['p']['top_value2'] = top_value2				# most frequently occuring value in attribute 2
+		n['p']['values_update_timestamp'] = get_timestamp()
+		graph.push(n['p'])
+		newly_computed_count += 1
+
+
+		print()
+		print()
+		print('NEWLY CALCULATED')
+		print('--------------------------------------------')
+		print('Attribute 1: '+ facet1)
+		print('Attribute 2: '+ facet2)
+		print('--------------------------------------------')	
+		print('Exact Score:', exact_score)
+		print('Type Match:', type_match)
+		print('Magnitude Difference:', magnitude_difference)
+		print('Jaro Score:', jaro_score)
+		print()
+		print('No. of missing pairs so far: ', missing_count)
+		print('Pairs previously computed so far: ', already_computed_count)
+		print('Pairs newly computed so far: ', newly_computed_count)
+
+	else: # if skip is True
+		missing_count += 1
+
+	return(missing_count, already_computed_count, newly_computed_count)
+
+def have_calcs_been_done_already(missing_count, already_computed_count, newly_computed_count):
+
+	exact_score = n["p"].properties['exact_score']
+	type_match = n["p"].properties['type_match']
+	magnitude_difference = n["p"].properties['magnitude_difference']
+	jaro_score = n["p"].properties['jaro_score']
+	type_int_f1 = n["p"].properties['type_int_f1']
+	type_str_f1 = n["p"].properties['type_str_f1']
+	type_date_f1 = n["p"].properties['type_date_f1']
+	type_int_f2 = n["p"].properties['type_int_f2']
+	type_str_f2 = n["p"].properties['type_str_f2']
+	type_date_f2 = n["p"].properties['type_date_f2']
+	int_ratio1 = n["p"].properties['int_ratio1']
+	str_ratio1 = n["p"].properties['str_ratio1']
+	date_ratio1 = n["p"].properties['date_ratio1']
+	int_ratio2 = n["p"].properties['int_ratio2']
+	str_ratio2 = n["p"].properties['str_ratio2']
+	date_ratio2 = n["p"].properties['date_ratio2']
+	no_unique_values1 = n["p"].properties['no_unique_values1']
+	no_unique_values2 = n["p"].properties['no_unique_values2']
+	top_value1 = n["p"].properties['top_value1']
+	top_value2 = n["p"].properties['top_value2']
+	values_update_timestamp = n["p"].properties['values_update_timestamp']
+
+	already_computed_count += 1
+
+
+	print()
+	print()
+	print('PREVIOUSLY CALCULATED')
+	print('--------------------------------------------')
+	print('Attribute 1: '+ facet1)
+	print('Attribute 2: '+ facet2)
+	print('--------------------------------------------')	
+	print('Exact Score:', exact_score)
+	print('Type Match:', type_match)
+	print('Magnitude Difference:', magnitude_difference)
+	print('Jaro Score:', jaro_score)
+	print()
+	print('No. of missing pairs so far: ', missing_count)
+	print('Pairs previously computed so far: ', already_computed_count)
+	print('Pairs newly computed so far: ', newly_computed_count)
+
+	return already_computed_count
+
+
+if __name__ == "__main__":
+# def run():
 
 	# args
 	parser = argparse.ArgumentParser(description='Calculates various distances between two attributes based on value information.')
@@ -385,8 +569,10 @@ def run():
 	graph = Graph('http://localhost:7474/db/data', user='neo4j', password='neo5j')
 
 	# get value data globally
-	input_file = 'data/values.csv'
-	value_info = dict_convert(input_file) 
+
+	input_file = 'data/values.json'
+	with open(input_file) as f:
+		value_info = json.load(f)
 
 	# open log file
 	start_timestamp = get_timestamp()
@@ -405,349 +591,37 @@ def run():
 		if not recalculate_arg: # argument passed at command line to recalculate all nodes
 
 			for n in tqdm(graph.run("MATCH (p:Pair) RETURN p ORDER BY p.pseudo_confidence DESC"),total = pairs_total_asNum, unit = 'pairs'):
+			# for n in tqdm(graph.run("MATCH (p:Pair) RETURN p ORDER BY p.pseudo_confidence"),total = pairs_total_asNum, unit = 'pairs'): # del and switch back after test
+
 				facet1 = n["p"]["good_attribute"]
-				facet2 = n["p"]["bad_attribute"]
-					
+				facet2 = n["p"]["bad_attribute"]				
 
 				# check if calculations have already been done
 				try:
-					exact_score = n["p"].properties['exact_score']
-					type_match = n["p"].properties['type_match']
-					magnitude_difference = n["p"].properties['magnitude_difference']
-					jaro_score = n["p"].properties['jaro_score']
-					type_int_f1 = n["p"].properties['type_int_f1']
-					type_str_f1 = n["p"].properties['type_str_f1']
-					type_date_f1 = n["p"].properties['type_date_f1']
-					type_int_f2 = n["p"].properties['type_int_f2']
-					type_str_f2 = n["p"].properties['type_str_f2']
-					type_date_f2 = n["p"].properties['type_date_f2']
-					int_ratio1 = n["p"].properties['int_ratio1']
-					str_ratio1 = n["p"].properties['str_ratio1']
-					date_ratio1 = n["p"].properties['date_ratio1']
-					int_ratio2 = n["p"].properties['int_ratio2']
-					str_ratio2 = n["p"].properties['str_ratio2']
-					date_ratio2 = n["p"].properties['date_ratio2']
-					no_unique_values1 = n["p"].properties['no_unique_values1']
-					no_unique_values2 = n["p"].properties['no_unique_values2']
-					top_value1 = n["p"].properties['top_value1']
-					top_value2 = n["p"].properties['top_value2']
-					values_update_timestamp = n["p"].properties['values_update_timestamp']
-
-					already_computed_count += 1
-
-
-					print()
-					print()
-					print('PREVIOUSLY CALCULATED')
-					print('--------------------------------------------')
-					print('Attribute 1: '+ facet1)
-					print('Attribute 2:' + facet2)
-					print('--------------------------------------------')	
-					print('Exact Score:', exact_score)
-					print('Type Match:', type_match)
-					print('Magnitude Difference:', magnitude_difference)
-					print('Jaro Score:', jaro_score)
-					print()
-					print('No. of missing pairs so far: ', missing_count)
-					print('Pairs previously computed so far: ', already_computed_count)
-					print('Pairs newly computed so far: ', newly_computed_count)
+					already_computed_count = have_calcs_been_done_already(missing_count, already_computed_count, newly_computed_count)
 
 				except (AttributeError, KeyError): # aka if the scores haven't been calculated
 
-					# get value info out of the dict (held in mem)
-					try:
+					counters = do_calcs(facet1, facet2, missing_count, already_computed_count, newly_computed_count)
 
-						values1 = value_info.get(facet1)
-						values2 = value_info.get(facet2)
-
-						pair_name = n["p"].properties['name']
-						
-						values_list1 = values1.keys()
-						values_list2 = values2.keys()
-
-					except AttributeError:
-						values_list1 = []
-						values_list2 = []
-
-
-					if len(values_list1) and len(values_list2) > 0: # check if the attributes have value information in input
-						skip = False
-					else:
-						skip = True
-						if len(values_list1) and len(values_list1) == 0:
-							print('MISSING INFORMATION IN INPUT')
-							print('------------------------------')
-							print(pair_name, 'skipped')
-							print(facet1, 'and', facet2, 'has no value information in values.csv')
-							outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
-							outF.write(pair_name+'skipped\n')
-							outF.write(facet1+' and '+facet2+' have no value information in values.csv\n\n')
-						elif len(values_list1) == 0:
-							print('MISSING INFORMATION IN INPUT')
-							print('------------------------------')
-							print(pair_name, 'skipped')
-							print(facet1, 'has no value information in values.csv')
-							outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
-							outF.write(pair_name+'skipped\n')
-							outF.write(facet1+' has no value information in values.csv\n\n')
-						elif len(values_list2) == 0:
-							print('MISSING INFORMATION IN INPUT')
-							print('------------------------------')
-							print(pair_name, 'skipped')
-							print(facet2, 'has no value information in values.csv')
-							outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
-							outF.write(pair_name+'skipped\n')
-							outF.write(facet2+' has no value information in values.csv\n\n')
-						else:
-							print('something went wrong..')
-							sys.exit()
-
-					
-					if not skip: # do the calculations
-
-						exact_score = exact_value_scoring(values_list1, values_list2)
-						type_hash_results = type_hasher(values_list1, values_list2)
-
-
-						type_hash = type_hash_results[0] 			# the pair's type match (numeric, string or date)
-						type_int_f1 = type_hash_results[1]			# no. of numeric matches in attribute 1
-						type_str_f1 = type_hash_results[2]			# no. of string matches in attribute 1
-						type_date_f1 = type_hash_results[3]			# no. of date matches in attribute 1
-						type_int_f2 = type_hash_results[4]			# no. of numeric matches in attribute 2
-						type_str_f2 = type_hash_results[5]			# no. of string matches in attribute 2
-						type_date_f2 = type_hash_results[6]			# no. of date matches in attribute 2
-						int_ratio1 = type_hash_results[7]			# ratio of numeric matches in attribute 1
-						str_ratio1 = type_hash_results[8]			# ratio of string matches in attribute 1
-						date_ratio1 = type_hash_results[9]			# ratio of date matches in attribute 1
-						int_ratio2 = type_hash_results[10]			# ratio of numeric matches in attribute 2
-						str_ratio2 = type_hash_results[11]			# ratio of string matches in attribute 2
-						date_ratio2 = type_hash_results[12]			# ratio of date matches in attribute 2
-						no_unique_values1 = type_hash_results[13]	# number of unique values in attribute 1
-						no_unique_values2 = type_hash_results[14]	# number of unique values in attribute 2
-						top_value1 = max(values1, key=lambda key: values1[key])
-						top_value2 = max(values2, key=lambda key: values2[key])
-
-
-
-						if type(type_hash) is str:
-							type_match = type_hash
-						else:
-							print('something going wrong with type_hash')
-							print(type(type_hash))
-							sys.exit()
-
-						if type_match == 'numeric match':
-							values_list1_num = type_hash_results[15]
-							values_list2_num = type_hash_results[16]
-							magnitude_difference = magnitude_diff(type_hash, values_list1_num, values_list2_num)
-							fuzzy_scores = 'N.A.'
-							jaro_score = 'N.A.'
-						elif type_match == 'date match':
-							magnitude_difference = 'N.A.'
-							fuzzy_scores = 'N.A.'
-							jaro_score = 'N.A.'
-						else:
-							magnitude_difference = 'N.A.'
-							fuzzy_scores = fuzzy_value_scoring(values_list1, values_list2)
-							jaro_score = fuzzy_scores.get('jaro_distance_quant')
-									
-
-						# put the calculations back into graph db
-
-						n['p']['exact_score'] = exact_score
-						n['p']['type_match'] = type_match
-						n['p']['magnitude_difference'] = magnitude_difference
-						n['p']['jaro_score'] = jaro_score
-						n['p']['type_int_f1'] = type_int_f1 			# no. of numeric matches in attribute 1
-						n['p']['type_str_f1'] = type_str_f1 			# no. of string matches in attribute 1
-						n['p']['type_date_f1'] = type_date_f1 			# no. of date matches in attribute 1
-						n['p']['type_int_f2'] = type_int_f2				# no. of numeric matches in attribute 2
-						n['p']['type_str_f2'] = type_str_f2				# no. of string matches in attribute 2
-						n['p']['type_date_f2'] = type_date_f2			# no. of date matches in attribute 2
-						n['p']['int_ratio1'] = int_ratio1				# ratio of numeric matches in attribute 1
-						n['p']['str_ratio1'] = str_ratio1				# ratio of string matches in attribute 1
-						n['p']['date_ratio1'] = date_ratio1				# ratio of date matches in attribute 1
-						n['p']['int_ratio2'] = int_ratio2				# ratio of numeric matches in attribute 2
-						n['p']['str_ratio2'] = str_ratio2				# ratio of string matches in attribute 2
-						n['p']['date_ratio2'] = date_ratio2				# ratio of date matches in attribute 2
-						n['p']['no_unique_values1'] = no_unique_values1	# number of unique values in attribute 1
-						n['p']['no_unique_values2'] = no_unique_values2	# number of unique values in attribute 2
-						n['p']['top_value1'] = top_value1				# most frequently occuring value in attribute 1
-						n['p']['top_value2'] = top_value2				# most frequently occuring value in attribute 2
-						n['p']['values_update_timestamp'] = get_timestamp()
-						graph.push(n['p'])
-						newly_computed_count += 1
-
-
-						print()
-						print()
-						print('NEWLY CALCULATED')
-						print('--------------------------------------------')
-						print('Attribute 1: '+ facet1)
-						print('Attribute 2:' + facet2)
-						print('--------------------------------------------')	
-						print('Exact Score:', exact_score)
-						print('Type Match:', type_match)
-						print('Magnitude Difference:', magnitude_difference)
-						print('Jaro Score:', jaro_score)
-						print()
-						print('No. of missing pairs so far: ', missing_count)
-						print('Pairs previously computed so far: ', already_computed_count)
-						print('Pairs newly computed so far: ', newly_computed_count)
-
-					else: # if skip is True
-						missing_count += 1
+					missing_count = counters[0]
+					already_computed_count = counters[1]
+					newly_computed_count = counters[2]
 
 
 
 		else: # recalculate all nodes
 
 			for n in tqdm(graph.run("MATCH (p:Pair) RETURN p ORDER BY p.pseudo_confidence DESC"),total = pairs_total_asNum, unit = 'pairs'):
-				facet1 = n["p"]["bad_facet"]
-				facet2 = n["p"]["good_facet"]
-
-				# get value info out of the dict (held in mem)
-
-				values1 = value_info.get(facet1)
-				values2 = value_info.get(facet2)
-
-				pair_name = n["p"].properties['name']
-
-				values_list1 = values1.keys()
-				values_list2 = values2.keys()
-
-				if len(values_list1) and len(values_list2) > 0: # check if the attributes have value information in input
-					skip = False
-				else:
-					skip = True
-					if len(values_list1) and len(values_list1) == 0:
-						print('MISSING INFORMATION IN INPUT')
-						print('------------------------------')
-						print(pair_name, 'skipped')
-						print(facet1, 'and', facet2, 'has no value information in values.csv')
-						outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
-						outF.write(pair_name+'skipped\n')
-						outF.write(facet1+' and '+facet2+' have no value information in values.csv\n\n')
-					elif len(values_list1) == 0:
-						print('MISSING INFORMATION IN INPUT')
-						print('------------------------------')
-						print(pair_name, 'skipped')
-						print(facet1, 'has no value information in values.csv')
-						outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
-						outF.write(pair_name+'skipped\n')
-						outF.write(facet1+' has no value information in values.csv\n\n')
-					elif len(values_list2) == 0:
-						print('MISSING INFORMATION IN INPUT')
-						print('------------------------------')
-						print(pair_name, 'skipped')
-						print(facet2, 'has no value information in values.csv')
-						outF.write('MISSING INFORMATION IN INPUT\n------------------------------\n')
-						outF.write(pair_name+'skipped\n')
-						outF.write(facet2+' has no value information in values.csv\n\n')
-					else:
-						print('something went wrong..')
-						sys.exit()
-
 				
-				if not skip: # do the calculations
+				facet1 = n["p"]["bad_attribute"]
+				facet2 = n["p"]["good_attribute"]
 
-					exact_score = exact_value_scoring(values_list1, values_list2)
-					type_hash_results = type_hasher(values_list1, values_list2)
+				counters = do_calcs(facet1, facet2, missing_count, already_computed_count, newly_computed_count)
 
-
-					type_hash = type_hash_results[0] 			# the pair's type match (numeric, string or date)
-					type_int_f1 = type_hash_results[1]			# no. of numeric matches in attribute 1
-					type_str_f1 = type_hash_results[2]			# no. of string matches in attribute 1
-					type_date_f1 = type_hash_results[3]			# no. of date matches in attribute 1
-					type_int_f2 = type_hash_results[4]			# no. of numeric matches in attribute 2
-					type_str_f2 = type_hash_results[5]			# no. of string matches in attribute 2
-					type_date_f2 = type_hash_results[6]			# no. of date matches in attribute 2
-					int_ratio1 = type_hash_results[7]			# ratio of numeric matches in attribute 1
-					str_ratio1 = type_hash_results[8]			# ratio of string matches in attribute 1
-					date_ratio1 = type_hash_results[9]			# ratio of date matches in attribute 1
-					int_ratio2 = type_hash_results[10]			# ratio of numeric matches in attribute 2
-					str_ratio2 = type_hash_results[11]			# ratio of string matches in attribute 2
-					date_ratio2 = type_hash_results[12]			# ratio of date matches in attribute 2
-					no_unique_values1 = type_hash_results[13]	# number of unique values in attribute 1
-					no_unique_values2 = type_hash_results[14]	# number of unique values in attribute 2
-					top_value1 = max(values1, key=lambda key: values1[key])
-					top_value2 = max(values2, key=lambda key: values2[key])
-
-
-
-					if type(type_hash) is str:
-						type_match = type_hash
-					else:
-						print('something going wrong with type_hash')
-						print(type(type_hash))
-						sys.exit()
-
-					if type_match == 'numeric match':
-						values_list1_num = type_hash_results[15]
-						values_list2_num = type_hash_results[16]
-						magnitude_difference = magnitude_diff(type_hash, values_list1_num, values_list2_num)
-						fuzzy_scores = 'N.A.'
-						jaro_score = 'N.A.'
-					elif type_match == 'date match':
-						magnitude_difference = 'N.A.'
-						fuzzy_scores = 'N.A.'
-						jaro_score = 'N.A.'
-					else:
-						magnitude_difference = 'N.A.'
-						fuzzy_scores = fuzzy_value_scoring(values_list1, values_list2)
-						jaro_score = fuzzy_scores.get('jaro_distance_quant')
-								
-
-					# put the calculations back into graph db
-
-					n['p']['exact_score'] = exact_score
-					n['p']['type_match'] = type_match
-					n['p']['magnitude_difference'] = magnitude_difference
-					n['p']['jaro_score'] = jaro_score
-					n['p']['type_int_f1'] = type_int_f1 			# no. of numeric matches in attribute 1
-					n['p']['type_str_f1'] = type_str_f1 			# no. of string matches in attribute 1
-					n['p']['type_date_f1'] = type_date_f1 			# no. of date matches in attribute 1
-					n['p']['type_int_f2'] = type_int_f2				# no. of numeric matches in attribute 2
-					n['p']['type_str_f2'] = type_str_f2				# no. of string matches in attribute 2
-					n['p']['type_date_f2'] = type_date_f2			# no. of date matches in attribute 2
-					n['p']['int_ratio1'] = int_ratio1				# ratio of numeric matches in attribute 1
-					n['p']['str_ratio1'] = str_ratio1				# ratio of string matches in attribute 1
-					n['p']['date_ratio1'] = date_ratio1				# ratio of date matches in attribute 1
-					n['p']['int_ratio2'] = int_ratio2				# ratio of numeric matches in attribute 2
-					n['p']['str_ratio2'] = str_ratio2				# ratio of string matches in attribute 2
-					n['p']['date_ratio2'] = date_ratio2				# ratio of date matches in attribute 2
-					n['p']['no_unique_values1'] = no_unique_values1	# number of unique values in attribute 1
-					n['p']['no_unique_values2'] = no_unique_values2	# number of unique values in attribute 2
-					n['p']['top_value1'] = top_value1				# most frequently occuring value in attribute 1
-					n['p']['top_value2'] = top_value2				# most frequently occuring value in attribute 2
-					n['p']['values_update_timestamp'] = get_timestamp()
-					graph.push(n['p'])
-					newly_computed_count += 1
-
-
-					print()
-					print()
-					print('NEWLY CALCULATED')
-					print('--------------------------------------------')
-					print('Attribute 1: '+ facet1)
-					print('Attribute 2:' + facet2)
-					print('--------------------------------------------')	
-					print('Exact Score:', exact_score)
-					print('Type Match:', type_match)
-					print('Magnitude Difference:', magnitude_difference)
-					print('Jaro Score:', jaro_score)
-					print()
-					print('No. of missing pairs so far: ', missing_count)
-					print('Pairs previously computed so far: ', already_computed_count)
-					print('Pairs newly computed so far: ', newly_computed_count)
-
-				else: # if skip is True
-					missing_count += 1
-
-
-
-
-
+				missing_count = counters[0]
+				already_computed_count = counters[1]
+				newly_computed_count = counters[2]
 
 
 

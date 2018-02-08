@@ -1,3 +1,13 @@
+'''
+Master file to control the initial building of the DB and running calculation modules on attributes.
+
+run() takes several arguments that trigger various processes as visible in the code below. These will be documented outside of the web app.
+Users (certain users only, jsut me for now) will be able to execute these scripts from within the app.
+I should also have a version of this file that can be ran manually if anyone needs to do that.
+
+
+'''
+
 import make_input, graph_make, lexical_filter, coexistence, values, autocluster, mancluster
 import argparse, sys
 
@@ -34,11 +44,14 @@ def calculations(recalc=None):
 
 
 
+# remove the main start in favor of def run() for tests.
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-	# args for testing
-	pointer = 'http://scooby.ebi.ac.uk:8081/biosamples/beta/samples'
+# 	# args for testing
+# 	pointer = 'http://scooby.ebi.ac.uk:8081/biosamples/beta/samples'
+# 	run_mode = None
+# 	recalc = None
 
 
 

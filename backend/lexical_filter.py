@@ -321,8 +321,8 @@ def issue_filter(df):
 		If a decision cannot be taken the pair remains alphabetically sorted.
 		'''
 
-		attribute1_freq = freq_lookup_dict.get(good_facet)
-		attribute2_freq = freq_lookup_dict.get(bad_facet)
+		# attribute1_freq = freq_lookup_dict.get(good_facet) # problem here, good_facet ref before assignment
+		# attribute2_freq = freq_lookup_dict.get(bad_facet)
 
 		# if spell_discrepancy:
 		# 	if len(bad_words1) > len(bad_words2):
@@ -365,6 +365,9 @@ def issue_filter(df):
 		# 	switch = True
 
 		# this is less smart but may work better
+
+		attribute1_freq = freq_lookup_dict.get(attribute1)
+		attribute2_freq = freq_lookup_dict.get(attribute2)
 
 		if int(attribute1_freq) > int(attribute2_freq):
 			switch = False
@@ -500,8 +503,8 @@ def data_output(df):
 
 	result_df.to_csv('result_df.csv')
 
-# if __name__ == '__main__':
-def run():
+if __name__ == '__main__':
+# def run():
 
 
 	graph = Graph('http://localhost:7474/db/data', user='neo4j', password='neo5j') # initialising graph
@@ -509,9 +512,10 @@ def run():
 	# generate pairs after first pass filter
 
 	try:
-		input_df3 = pd.read_csv('filtered_pairs.csv', usecols = ['attribute1','attribute2','levenshtein'], sep = '§', engine = 'python')
-		df = pd.read_csv('attributes.csv', usecols = ['facet', 'frequency'])
-		freq_lookup_dict = dict(zip(df.facet.values, df.frequency.values))
+		input_df3 = pd.read_csv('data/filtered_pairs.csv', usecols = ['attribute1','attribute2','levenshtein'], sep = '§', engine = 'python')
+		df = pd.read_csv('data/attributes.csv', usecols = ['attribute', 'frequency'])
+		freq_lookup_dict = dict(zip(df.attribute.values, df.frequency.values))
+
 
 	except FileNotFoundError:
 
@@ -519,11 +523,10 @@ def run():
 		print('Running all by all fuzzy match. This process takes ~15 min for 26,000 x 26,000 attributes on an 8 core machine.')
 
 		input_df = pd.DataFrame(columns= ['attribute1', 'attribute2', 'levenshtein'])
-		df = pd.read_csv('attributes.csv', usecols = ['facet', 'frequency'])
-		freq_lookup_dict = dict(zip(df.facet.values, df.frequency.values))
+		df = pd.read_csv('data/attributes.csv', usecols = ['attribute', 'frequency'])
+		freq_lookup_dict = dict(zip(df.attribute.values, df.frequency.values))
 
-		# df = pd.read_table('attributes_snowy_parsed', names = ['facet'])
-		all_pairs = tuple(list(df['facet']))
+		all_pairs = tuple(list(df['attribute']))
 
 		pool = multiprocessing.Pool()
 		result = pool.map(multithread_fuzz, all_pairs)
@@ -544,7 +547,7 @@ def run():
 		input_df3 = input_df2[['attribute1','attribute2']].dropna(how='any').T.apply(sorted).T.drop_duplicates().reset_index(drop=True)
 		print('Removed ' + str(input_df2.shape[0] - input_df3.shape[0]) + ' out of ' + str(input_df2.shape[0]))
 
-		input_df3.to_csv('filtered_pairs.csv', columns= ['attribute1', 'attribute2', 'levenshtein'], sep = '§')
+		input_df3.to_csv('data/filtered_pairs.csv', columns= ['attribute1', 'attribute2', 'levenshtein'], sep = '§')
 
 
 	# filtering and adding Pair nodes to graph

@@ -22,7 +22,13 @@ class User:
 
     def register(self, password, email, organisation):
         if not self.find():
-            user = Node('User', username=self.username, password=bcrypt.encrypt(password), email=email, organisation=organisation)
+            user = Node('User',
+                username=self.username,
+                password=bcrypt.encrypt(password),
+                email=email,
+                organisation=organisation,
+                sort_type='smart',
+                vioscreen_stop='No')
             graph.create(user)
             return True
         else:
@@ -145,35 +151,104 @@ def get_num_samples_processed():
 
 
 
-def cypher_200():
+def cypher_200(sort_type, vioscreen_stop):
 
-    # gets a 200 long cursor of objects this will need some sort of pagenation later
+    if sort_type == 'smart':
+        if vioscreen_stop == 'Yes':
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
+            RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
+            LIMIT 200
+            '''
+            return graph.run(fetch)
 
-    # fetch = '''
-    # MATCH (p:Pair)
-    # RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
-    # LIMIT 200
-    # '''
+        else:
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
+            LIMIT 200
+            '''
+            return graph.run(fetch)
 
-    fetch = '''
-    MATCH (p:Pair)
-    WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
-    RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
-    LIMIT 200
-    '''
-    return graph.run(fetch)
+    elif sort_type == 'max': # sorting in descending order by the facet with the least usage in the db
+        if vioscreen_stop == 'Yes':
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD <= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+            return graph.run(fetch)
+        else:
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD <= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+            return graph.run(fetch)
+
+    elif sort_type == 'major': # sorting in descending order by major attribute (highest sample usage)
+        if vioscreen_stop == 'Yes':
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD >= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+            return graph.run(fetch)
+        else:
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD >= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+            return graph.run(fetch)
 
 
-
-
-def fetch_initial_pair_nodes():
+def fetch_initial_pair_nodes(sort_type, vioscreen_stop):
 
     # this module is to fetch the initial cursor only doesnt require pair_id starting point
 
     # mode advanced could ensure the user hasn't already curated them
     # secondary order_by no. of samples affected
 
-    cursor = cypher_200()
+    
+    cursor = cypher_200(sort_type, vioscreen_stop)
 
     while cursor.forward():
         record = cursor.current()
@@ -181,11 +256,10 @@ def fetch_initial_pair_nodes():
         pair_id = record['id(p)']
         return (name, pair_id) # with this indent it is only getting one for testing!!!!
 
+def get_next_pair_record(pair_id, sort_type, vioscreen_stop):
 
+    cursor = cypher_200(sort_type, vioscreen_stop)
 
-def get_next_pair_record(pair_id):
-
-    cursor = cypher_200()
     node = get_pair_node(pair_id) # checks that the node exists
     if node is None:
         return 'Node not in database'
@@ -330,11 +404,6 @@ def get_pair_node(pair_id): # returns a node
                 '''
     return graph.run(one_fetch, pair_id=pair_id).evaluate()
 
-
- 
-
-
-
 def get_lexical_info(pair_id):
 
     node = get_pair_node(pair_id)
@@ -441,7 +510,30 @@ def get_last_decision(username, pairID):
 
     return last_decision
 
+def change_sort_type(username, input_sort_type):
+    # this is to save the sort_type setting on the user node if it changes
 
+    selector = NodeSelector(graph)
+    selection = selector.select("User", username = username)
+    user_node = selection.first()
+    user_node['sort_type'] = input_sort_type
+    graph.push(user_node)
+
+def change_vioscreen_stop(username, input_vioscreen_stop):
+    # this is to save the sort_type setting on the user node if it changes
+
+    selector = NodeSelector(graph)
+    selection = selector.select("User", username = username)
+    user_node = selection.first()
+    user_node['vioscreen_stop'] = input_vioscreen_stop
+    graph.push(user_node)
+
+
+def current_settings(username):
+    selector = NodeSelector(graph)
+    selection = selector.select("User", username = username)
+    user_node = selection.first()
+    return (user_node['sort_type'], user_node['vioscreen_stop'])
 
 
 

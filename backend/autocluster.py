@@ -126,20 +126,6 @@ def build_matrix(facet1, facet2):
 		outF.write('In total' + ' ' + str(len(unique_samples)) + ' ' + 'unique samples are being analysed with' + ' ' + str(len(unique_facets)) + ' ' + 'attributes.' + '\n')
 
 
-	# # this was a separate internal break that is no longer needed becuase it is checked earlier using samples.csv in mem 
-
-	# if (len(facet1_sample_ids) == 0) or (len(facet2_sample_ids) ==0):
-	# 	if len(facet1_sample_ids) == 0:
-	# 		print('Critical:', facet1, 'found no associated samples')
-	# 		outF.write('Critical:' + ' ' +  facet1 + ' ' + 'found no associated samples' + '\n')
-	# 		outF.write('You may need to update the sample input file.' + '\n')
-	# 		return
-	# 	if len(facet2_sample_ids) == 0:
-	# 		print('Critical:', facet2, 'found no associated samples')
-	# 		outF.write('Critical:' + ' ' +  facet2 + ' ' +  'found no associated samples' + '\n')
-	# 		outF.write('You may need to update the sample input file.' + '\n')
-	# 		return
-
 	print('Generating', len(unique_samples), 'x', len(unique_facets), 'DataFrame...')
 	outF.write('Dataframe is' + ' ' +  str(len(unique_samples)) + ' ' +  'x' + ' ' +  str(len(unique_facets)) + '\n' + '\n')
 
@@ -161,9 +147,9 @@ def build_matrix(facet1, facet2):
 			print('Made it to dataframe row', printcounter,'/', len(unique_samples))
 		for a in unique_facets:
 			if a in attributes_:
-				df.loc[s,a] = 1
+				df.loc[s,a] = True
 			else:
-				df.loc[s,a] = 0
+				df.loc[s,a] = False
 
 				# this should be rewritten with pandas crosstab function to improve speed?
 
@@ -469,11 +455,11 @@ def run_calcs(facet1, facet2, missing_count, already_computed_count, newly_compu
 
 		# Generate Scatterplot
 
-		mca_plot = mcadraw(row_principal_coordinates, pairID) # mca result scatterplot
-		outF.write('id: ' + str(pairID)+'\n')
-		outF.write('Scatter plot generated. See ' + mca_plot + '\n\n')
+		# mca_plot = mcadraw(row_principal_coordinates, pairID) # mca result scatterplot
+		# outF.write('id: ' + str(pairID)+'\n')
+		# outF.write('Scatter plot generated. See ' + mca_plot + '\n\n')
+		# dendro_plot = hiarachical_cluster(row_principal_coordinates, facet1, facet2, pairID)
 
-		dendro_plot = hiarachical_cluster(row_principal_coordinates, facet1, facet2, pairID)
 
 		# put the calculations back into graph db
 
@@ -483,9 +469,9 @@ def run_calcs(facet1, facet2, missing_count, already_computed_count, newly_compu
 		n['p']['no_of_samples_in_attribute_1'] = len(facet1_sample_ids)
 		n['p']['no_of_samples_in_attribute_2'] = len(facet2_sample_ids)
 		n['p']['no_of_shared_samples_in_pair'] = len(facet1n2_sample_ids)
-		n['p']['mca_plot'] = mca_plot
+		# n['p']['mca_plot'] = mca_plot
 		n['p']['mca_data'] = mca_data
-		n['p']['dendro_plot'] = dendro_plot
+		# n['p']['dendro_plot'] = dendro_plot
 		n['p']['autocluster_update_timestamp'] = autocluster_update_timestamp
 
 		graph.push(n['p'])
@@ -541,8 +527,9 @@ def run_calcs(facet1, facet2, missing_count, already_computed_count, newly_compu
 
 
 
-# if __name__ == '__main__':
-def run():
+
+if __name__ == '__main__':
+# def run():
 
 	# args
 	sys.setrecursionlimit(10000)
@@ -639,6 +626,7 @@ def run():
 
 					problem_facet = None
 
+					# see if the attribute is very large
 
 					if facet1_count > 10000 or facet2_count > 10000:
 						if facet1_count > 10000:

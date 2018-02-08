@@ -33,7 +33,7 @@
 <div class="container">
   <div class="row">
     <div class="col-md-6 offset-md-3">
-      <form action="{{ url_for('attribute_curation_pair', pair_id=pair_id, username=username) }}" method="POST">
+      <form action="{{ url_for('attribute_curation_pair', pair_id=pair_id, username=username, sort_type=sort_type) }}" method="POST">
 
         <div class="row">
           <div class="col-md-3 text-center">
@@ -46,7 +46,7 @@
 
           <div class="col-md-3 text-center">
           <button class="btn btn-success btn-block" type="submit" name="merge">
-            <i class="fa fa-thumbs-o-up fa-3x" aria-hidden="true"></i>
+            <i class="fa fa-hand-o-right fa-3x" aria-hidden="true"></i>
           </button>
           Merge
           </div>
@@ -162,7 +162,7 @@
       </h4>
     </div>
 
-    <div id="collapseTwo" class="collapse" role="tabpanel" aria-labelledby="headingTwo">
+    <div id="collapseTwo" class="collapse show" role="tabpanel" aria-labelledby="headingTwo">
       <div class="card-block">
 
 
@@ -177,11 +177,11 @@
                 <td>{{ jaccard_coefficient }}</td>
             </tr>
             <tr>
-                <td>Degree of attribute <b>{{ good_attribute }}</b></td>
+                <td>Degree of attribute <b>{{ bad_attribute }}</b></td>
                 <td>{{ degree1 }}</td>
             </tr>
             <tr>
-                <td>Degree of attribute <b>{{ bad_attribute }}</b></td>
+                <td>Degree of attribute <b>{{ good_attribute }}</b></td>
                 <td>{{ degree2 }}</td>
             </tr>
             <tr>
@@ -211,7 +211,7 @@
       </h4>
     </div>
 
-    <div id="collapseThree" class="collapse" role="tabpanel" aria-labelledby="headingThree">
+    <div id="collapseThree" class="collapse show" role="tabpanel" aria-labelledby="headingThree">
       <div class="card-block">
 
 

@@ -33,6 +33,7 @@ from collections import Counter
 from collections import Mapping
 from pprint import pprint as pp
 from multiprocessing import Process
+import test
 
 
 def fn_timer(function):
@@ -59,84 +60,77 @@ def api_samples(parms):
 	page_size = parms["size"]
 	valname = str('values_' + name + '.json')
 
-	print("In api_samples", startpage, endpage)
+	# print(name, " : ", startpage, endpage)
 	# return # remove after testing
 
 	counter_page = startpage # not sure if this is needed
 
-	attribute_dict = {}
+	all_attributes = {}
 
-	with open(valname, 'w', encoding="utf-8") as fp:
-
-		with open(name + '.csv', 'w') as f:
-
-			# for counter_page in range(1, 5): # delete after testing
-			for counter_page in range(startpage, endpage + 1):
-
-				# Initialize keys_list variable
-				keys_list = []
-				query_params = {
-					"page": counter_page,
-					"size": page_size,
-				}
-
-				# Request the API for the samples
-				response = requests.get(pointer, params=query_params)
-				if response.status_code is not 200:
-					# If the status code of the response is not 200 (OK), something is wrong with the API
-					# Return the process
-					print('Something wrong happening. Error code '
-						+ str(response.status_code)
-						+ ' At '
-						+ str(time.asctime(time.gmtime(time.time())))
-						)
-					return
-
-				# counter_page = counter_page + 1
-				if counter_page % 100 == 0:
-					print("Process " + name + " reached " + str(counter_page))
-
-				# Looking through the JSON:
-				# Get all samples on the page
-
-				try:
-					samples_in_page = response.json()['_embedded']['samples']
-				
-
-					# For each sample, get characteristics types and save them in the key_list variable
-					for sample in samples_in_page:
-						accession_no = sample['accession'] # added by MG to grab sampleIDs
-						sample_characteristics = sample['characteristics']
-						sample_keys = list(sample_characteristics.keys())
-						sample_keys = [accession_no] + sample_keys
-						keys_list.append(sample_keys)
+	with open(valname, 'w', encoding="utf-8") as fp, open(name + '.csv', 'w') as f:
 
 
-					# Write the characteristics list into the file
-					writer = csv.writer(f)
-					writer.writerows(keys_list)
-
-					# extract value info to a dict of dict
-
-					for attribute, value_ in sample_characteristics.items():
-
-						if attribute not in attribute_dict.keys():
-							attribute_dict[attribute] = {}
-
-						for item in value_:
-							value = item.get('text')
-
-						if value not in attribute_dict[attribute]:
-							attribute_dict[attribute].update({value:1})
-						else:
-							count = attribute_dict[attribute].get(value) + 1
-							attribute_dict[attribute][value] = count
-
-				except KeyError:
-					json.dump(attribute_dict, fp)
+		for counter_page in tqdm(range(startpage, endpage), desc=str("Process " + name), unit='page'):
+			# if counter_page % 100 == 0:
+			# 	print("Process " + name + " reached " + str(counter_page))
 
 
-		json.dump(attribute_dict, fp)
+			# Initialize keys_list variable
+			keys_list = []
+			query_params = {
+				"page": counter_page,
+				"size": page_size,
+			}
+
+			# Request the API for the samples
+			response = requests.get(pointer, params=query_params)
+			if response.status_code is not 200:
+				# If the status code of the response is not 200 (OK), something is wrong with the API
+				# Return the process
+				print('Something wrong happening. Error code '
+					+ str(response.status_code)
+					+ ' At '
+					+ str(time.asctime(time.gmtime(time.time())))
+					)
+				return
+
+			# scraping json on the page
+
+			samples_in_page = response.json()['_embedded']['samples']
+		
+
+			# For each sample, get characteristics types and save them in the key_list variable
+			for sample in samples_in_page:
+				accession_no = sample['accession'] # added by MG to grab sampleIDs
+				sample_characteristics = sample['characteristics']
+				sample_keys = list(sample_characteristics.keys())
+				sample_keys = [accession_no] + sample_keys
+				keys_list.append(sample_keys)
+
+				# also extract the value information
+
+				for attribute in sample_characteristics:
+					val = sample_characteristics[attribute][0]['text']
+					if attribute not in all_attributes.keys():
+						all_attributes[attribute] = {val:1}
+						# print(all_attributes)
+
+					elif attribute in all_attributes.keys():
+						val_dict = all_attributes.get(attribute)
+						if val not in val_dict.keys():
+							val_dict[val] = 1
+							all_attributes[attribute] = val_dict
+						elif val in val_dict.keys():
+							val_dict[val] += 1
+							all_attributes[attribute] = val_dict
+
+
+			# Write the characteristics list into the file
+			writer = csv.writer(f)
+			writer.writerows(keys_list)
+
+
+		json.dump(all_attributes, fp)
 
 @fn_timer
 def multithread_crawler(pointer):
@@ -170,6 +164,7 @@ def multithread_crawler(pointer):
 		init.append(params)
 		startpoint = int(endpoint) + 1
 
+	print(init)
 	processlist = []
 	for entry in init:
 		p = Process(target=api_samples, args=[entry])
@@ -241,9 +236,9 @@ def create_cooccurrence_matrix(params):
 
 	line_counter = 0
 	total_lines = len(samples_type_list)
-	for type_list in samples_type_list:
-		if line_counter % 50000 == 0:
-			print('Line {} of {}'.format(line_counter, total_lines))
+	for type_list in tqdm(samples_type_list, unit='line', desc=str('Counting coexistences for' + in_filename), total=total_lines):
+		# if line_counter % 50000 == 0:
+		# 	print('Line {} of {}'.format(line_counter, total_lines))
 		types = [type_name.strip() for type_name in type_list.split(',') if type_name]
 		types.sort()
 		types_permutations = itertools.combinations(types, 2)
@@ -341,7 +336,7 @@ def get_attributes():
 	with open('data/samples.csv', 'r') as infile:
 			reader = csv.reader(infile)
 			reader_list = list(reader)
-			for sample_ in tqdm(reader_list):
+			for sample_ in tqdm(reader_list, desc='Extracting attribute counts from samples.', unit='samples'):
 				sample = sample_[1:]
 				for attribute in sample:
 					if attribute in attribute_counts:
@@ -356,9 +351,6 @@ def get_attributes():
 
 def combine_json():
 
-	'''
-	Putting the pickle dumped dictionaries together
-	'''
 
 	dictionaries = []
 	for f in glob.glob('values_Thread*_results.json'):
@@ -375,6 +367,8 @@ def combine_json():
 	for thread_dict in dictionaries:
 		for key, value in thread_dict.items():
 			all_attributes.add(key)
+	print('No of attributes in json value info: ' + str(len(all_attributes)))
+
 
 	for attribute in all_attributes:
 		attribute_full_dict = {}
@@ -394,12 +388,16 @@ def combine_json():
 	# 	os.remove(f)
 
 
-# if __name__ == "__main__":
-def run():
+if __name__ == "__main__":
 
 	# pointer = 'http://wwwdev.ebi.ac.uk/biosamples/beta/samples'
 	pointer = 'http://scooby.ebi.ac.uk:8081/biosamples/beta/samples'
 
+	# data data sub dir if it doesn't exist
+	try:
+		os.mkdir('./data')
+	except FileExistsError:
+		pass
 
 
 	# generates 'samples.csv', 'coexistences.csv' and 'values.csv'
@@ -417,6 +415,9 @@ def run():
 	# # add in earlier maybe launched by the crawler when this is known to work
 	combine_json()
 
+	test.count_combined()
+	test.count_each()
+	test.check_random()
 
 
 

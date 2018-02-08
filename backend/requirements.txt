@@ -1,5 +1,7 @@
 # requirements
 
+# NLTK needs data download and custom dict!
+
 ## assumed to be present:
 
 ### python3 itself

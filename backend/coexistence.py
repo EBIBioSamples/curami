@@ -73,8 +73,8 @@ def weighted_connections(facet1, facet2):
 
 
 
-# if __name__ == '__main__':
-def run():
+if __name__ == '__main__':
+# def run():
 
 	# # Test Box
 
@@ -154,7 +154,7 @@ def run():
 						print('PREVIOUSLY CALCULATED')
 						print('--------------------------------------------')
 						print('Attribute 1: '+ str(facet1))
-						print('Attribute 2:' + str(facet2))
+						print('Attribute 2: '+ str(facet2))
 						print('--------------------------------------------')	
 						print('Break No.:', break_no)
 						print('Degree Total:', edge_total)
@@ -203,7 +203,7 @@ def run():
 						print('NEWLY CALCULATED')
 						print('--------------------------------------------')
 						print('Attribute 1: '+ str(facet1))
-						print('Attribute 2:' + str(facet2))
+						print('Attribute 2: '+ str(facet2))
 						print('--------------------------------------------')	
 						print('Break No.:', break_no)
 						print('Degree Total:', edge_total)
@@ -232,7 +232,7 @@ def run():
 					print('ATTRIBUTE MISSING FROM INPUT GRAPH')
 					print('--------------------------------------------')
 					print('Attribute 1: '+ str(facet1))
-					print('Attribute 2:' + str(facet2))
+					print('Attribute 2: '+ str(facet2))
 					print('--------------------------------------------')	
 					print('Missed '+ str(missing_count)+' so far!')
 
@@ -277,7 +277,7 @@ def run():
 					print('NEWLY CALCULATED')
 					print('--------------------------------------------')
 					print('Attribute 1: '+ str(facet1))
-					print('Attribute 2:' + str(facet2))
+					print('Attribute 2: '+ str(facet2))
 					print('--------------------------------------------')	
 					print('Break No.:', break_no)
 					print('Degree Total:', edge_total)
@@ -306,7 +306,7 @@ def run():
 					print('ATTRIBUTE MISSING FROM INPUT GRAPH')
 					print('--------------------------------------------')
 					print('Attribute 1: '+ str(facet1))
-					print('Attribute 2:' + str(facet2))
+					print('Attribute 2: '+ str(facet2))
 					print('--------------------------------------------')	
 					print('Missed '+ str(missing_count)+' so far!')
 

@@ -1,6 +1,7 @@
 # from .models import User, get_todays_recent_posts, get_pairs, get_samples, get_last_coexistance_update, get_last_autocluster_update, get_last_lexical_update, get_last_values_update, get_num_samples_processed
 from .models import *
 from flask import Flask, request, session, redirect, url_for, render_template, flash
+import sys
 
 app = Flask(__name__)
 
@@ -106,6 +107,10 @@ def attribute_curator_home(username):
     if logged_in_username:
 
         username_tag = session.get('username')
+        settings = current_settings(username_tag)
+        sort_type = settings[0]
+        vioscreen_stop = settings[1]
+        
         profile_info = profile_stats(logged_in_username)
         all_pairs_curated = profile_info[0]
         SUGGESTED_MERGE_decisions = profile_info[1]
@@ -113,13 +118,37 @@ def attribute_curator_home(username):
         SUGGESTED_REVERSEMERGE_decisions = profile_info[3]
         TOTAL_MERGE = SUGGESTED_MERGE_decisions + SUGGESTED_REVERSEMERGE_decisions
 
-        node_info = fetch_initial_pair_nodes()
+        node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop)
         pair_id = node_info[1]
 
         if request.method == 'POST':
-            if 'wipeData' in request.form:
+            form_dict = request.form.to_dict()
+            print(form_dict , file=sys.stdout)
+
+            if 'wipeData' in form_dict:
                 user_data_wipe(username_tag)
                 return redirect(url_for('attribute_curator_home', username=username_tag))
+
+            elif form_dict.get('initial') == 'Continue Curating':
+
+                if 'sort' in form_dict:
+                    input_sort_type = form_dict.get('sort')
+                    print('input_sort_type is: ' + str(input_sort_type), file=sys.stdout)
+                    print('input_sort_type is: ' + str(input_sort_type), file=sys.stdout)
+                    if input_sort_type != sort_type: # to change user setting in Neo4J
+                        change_sort_type(username, input_sort_type)
+                        print('changed sort_type from ' + str(sort_type) + ' to ' + str(input_sort_type), file=sys.stdout)
+
+                if 'vioscreen_stop' in form_dict:
+                    input_vioscreen_stop = form_dict.get('vioscreen_stop')
+                    if input_vioscreen_stop != vioscreen_stop:
+                        change_vioscreen_stop(username, input_vioscreen_stop)
+                
+                return redirect(url_for('attribute_curation_pair', pair_id=pair_id, username=username_tag))
+
+                
+            elif form_dict.get('initial') == 'Begin Curating':
+                return redirect(url_for('attribute_curation_pair', pair_id=pair_id, username=username_tag))
 
 
         return render_template('attribute_curation_home.html',
@@ -129,7 +158,9 @@ def attribute_curator_home(username):
         SUGGESTED_MERGE_decisions=SUGGESTED_MERGE_decisions,
         SUGGESTED_NOMERGE_decisions=SUGGESTED_NOMERGE_decisions,
         SUGGESTED_REVERSEMERGE_decisions=SUGGESTED_REVERSEMERGE_decisions,
-        TOTAL_MERGE=TOTAL_MERGE
+        TOTAL_MERGE=TOTAL_MERGE,
+        sort_type=sort_type,
+        vioscreen_stop=vioscreen_stop
         ) 
     else:
         return redirect(url_for('login'))
@@ -137,10 +168,14 @@ def attribute_curator_home(username):
 
 @app.route('/attribute_curation/<username>/<int:pair_id>', methods=['GET','POST'])
 def attribute_curation_pair(pair_id, username):
+# def attribute_curation_pair(pair_id, username):
 
     logged_in_username = session.get('username')
+    settings = current_settings(logged_in_username)
+    sort_type = settings[0]
+    vioscreen_stop = settings[1]
 
-    results = get_next_pair_record(pair_id)
+    results = get_next_pair_record(pair_id, sort_type, vioscreen_stop)
 
     if results == 'Node not in database':
         abort(404)
@@ -183,31 +218,30 @@ def attribute_curation_pair(pair_id, username):
 
             last_decision = get_last_decision(username, pair_id)
 
+            print('current id: ' + str(current_pair_id), file=sys.stdout)
+            print('next id: ' + str(next_pair_id), file=sys.stdout)
+
             if request.method == 'POST':
+
+                form_dict = request.form.to_dict()
+                print(form_dict , file=sys.stdout)
+
 
                 if 'merge' in request.form:
                     make_relationship(username, pair_id, "SUGGESTED_MERGE", next_pair_id)
-                    print('next pair id')
-                    print(next_pair_id)
-                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username))
+                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username, sort_type=sort_type))
 
                 if 'no_merge' in request.form:
                     make_relationship(username, pair_id, "SUGGESTED_NOMERGE", next_pair_id)
-                    print('next pair id')
-                    print(next_pair_id)
-                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username))
+                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username, sort_type=sort_type))
 
                 if 'reverse_merge' in request.form:
                     make_relationship(username, pair_id, "SUGGESTED_REVERSEMERGE", next_pair_id)
-                    print('next pair id')
-                    print(next_pair_id)
-                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username))
+                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username, sort_type=sort_type))
 
                 if 'skip' in request.form:
                     make_relationship(username, pair_id, "SKIPPED", next_pair_id)
-                    print('next pair id')
-                    print(next_pair_id)
-                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username))
+                    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username, sort_type=sort_type))
 
 
 
@@ -239,7 +273,9 @@ def attribute_curation_pair(pair_id, username):
                 bad_words=bad_words,
                 possible_camelCase=possible_camelCase,
 
-                last_decision=last_decision
+                last_decision=last_decision,
+                sort_type=sort_type,
+                vioscreen_stop=vioscreen_stop
 
                 )
 
