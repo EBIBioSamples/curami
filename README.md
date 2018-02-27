@@ -3,9 +3,6 @@ A semi-automated curation tool to identify and harmonise erroneous attributes in
 
 See github  https://github.com/EBIBioSamples/curami for the current repo.
 
-[Headers](#headers)
-
-
 ## Quickstart- Running Locally
 ### Step 1
 To generate input data from BioSamples API crawl: python backend/make_input.py
