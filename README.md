@@ -183,39 +183,6 @@ Default settings are nice and gives you something in-between the two above. I ch
 
 
 ## Beyond V1
-This work has identified many curation opportunities that we were unable to fully develop in this primary version. This first working demo has been shown to users and their feedback is invaluable for future agile development. Some of the use cases we have not been able to meet are as follows:
-
-#### Engaging with OLS
-Ontology informed cleanup is not yet directly implemented. The curation app could lead to a stronger thesaurus but we should also use the synonym knowledge we already have. Expanding attributes using zooma and using fuzzy attribute matching based on this is under development. The Zooma tool will be especially useful for identifying false positives.
-
-#### Engaging with MarRef
-Domain experts require a curation mechanism that allows them to focus on attributes that lie within their area of expertise (applies to FAANG and CBI). MarRef would like to use the app to explore marine metagenomic data and the related attributes and clean up the data therein. A strong recommendation engine would also allow them to identify related samples. They would like to see which samples meet their criteria and which samples are close identifying what information is missing.
-
-#### Engaging with EBI Metagenomics
-Again EBI metagenomics require a domain specific curation ability. They also want to see capability to curate the values associated with the attributes and methods to pull their data out of the bulk of BioSamples. They would like to tag different enclaves of sample based on the type of assay that is being done. E.g. how many samples are oral vs gut metagenomes? Which attributes are predictive features for this tag and which attributes are shared. They hope this can be used by a recommendation engine at input to improve attribute capture and help consistency within the community.
-
-#### Engaging with EBI Submissions
-Submissions (aka USI)  would like to leverage the knowledge that the app generates (especially recommendation via co-occurrence weighting) to suggest new fields to submitters when they are submitting data. For this they need an recommendation API that they can query for the suggestion. Ideally this recommendation would also have further dimensions and would be able to recommend values or attributes required to meet previously specified standards such as MIABIS etc.
-
-#### Engaging with ENA
-In order to improve metadata capture ENA would like to rank samples based on their metadata. Which samples are missing critical metadata fields that would make their metadata more valuable (and improve their relative scores).
-
-#### Engaging with BioSamples
-Provenance of curation is critical. Based on the user’s profile we need to identify how valuable the curation is so that we can use the app’s curation objects alongside other curation efforts. E.g. automated methods should not be applied if that particular element of metadata has already been reviewed by a domain expert. If we get this wrong we are potentially making the data worse.
-Missing links are a problem in BioSamples. By catagorising samples we should be able to predict which external links should be present and find them if they are missing.
-
-#### Engaging with SciBite
-Once the app is in regular use the information can be used to produce a curation ontology which can be applied to other biological datasets. SciBite were interested in converting the data in the app into an ontology.
-
-To deliver these features the next version of the app requires:
-Attribute recommendations using co-occurrence. Given a certain group of ‘provided’ attributes which other attributes should also be added?
-Ability to curate specific domains rather than the whole dataset at once. The two approaches here are to provide a list of sample IDS then slice the data and re-run the analysis or preferably use the recommendation graph to guide the specialist user through their data (a sub graph within the main clade)
-Profiling samples. How good is sample x’s metadata? This requires clustering of samples and then measurement from the clusters mean.
-Expand analysis to utilise ontologies to assess merge pairs. This requires a new analysis module which can work alongside the other analysis scripts.
-Identification of strong correlations to identify which features can be used for automated curation.
-Implementation of deep learning unsupervised learning or decision tree using training data.
-Build a curation ontology using the data generated in the graph.
-Curation of value information. Identification of erroneous values (e.g. strings when most of the fields contain numbers.
 
 #### App Features to Add
 A user should be able to review their decisions in a table so they can review and change if necessary.
