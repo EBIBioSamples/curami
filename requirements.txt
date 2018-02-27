@@ -1,81 +1,20 @@
-# requirements
 
-## assumed to be present:
-
-### python3 itself
-### sys
-### os
-### math
-### re
-### timeit
-
-## third party:
-
-multiprocessing
-requests
-string
-itertools
-json
-collections
-pprint as pp
-time
-functools
-pathlib
-pandas as pd
-glob
-from operator import add
-numpy as np
-
-### Lexical module
-
-future
-pyenchant
-fuzzywuzzy
-validator
-progressbar2
-six
-nltk  # note other modules needed
-matplotlib
-tqdm
-datetime
-
-### Analysis module
-
-networkx as nx
-matplotlib import pylab
-matplotlib.pyplot as plt
-from py2neo import Node, Relationship, Graph, Path, authenticate
-argparse
-
-#### Value Script before rewrite
-
-csv
-ast
-jellyfish
-scipy.stats as stats
-dateutil.parser import parse
-from itertools import combinations, product
-jellyfish.\_jellyfish as py\_jellyfish
-
-
-#### Cluster Script
-
-from functools import wraps
-seaborn as sns
-plotly.plotly as py
-plotly.figure_factory as ff
-plotly 
-prince
-sklearn
-sklearn.decomposition import PCA
-scipy.spatial.distance import pdist
-sklearn.cluster import AffinityPropagation
-scipy.cluster.hierarchy import dendrogram, linkage, cophenet, fcluster
-
-#### Webapp
-
-bcrypt
-
-
-
-
+requests==2.18.4 
+jellyfish==0.5.6
+pandas==0.20.3
+glob2==0.5
+pathlib2==2.3.0
+numpy==1.13.3
+nltk==3.2.4
+pyenchant==2.0.0
+fuzzywuzzy==0.15.1
+tqdm==4.19.5
+py2neo==3.1.2
+networkx==2.0
+matplotlib==2.1.0
+scipy==0.19.1
+seaborn==0.8
+prince==0.2.6
+scikit-learn==0.19.1
+plotly==2.2.3
+bcrypt==3.1.4
