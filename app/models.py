@@ -536,7 +536,28 @@ def current_settings(username):
     return (user_node['sort_type'], user_node['vioscreen_stop'])
 
 
+def reccomend(provided_attributes):
 
+    # takes a comma separated string or a list
+
+    if type(provided_attributes) == str:
+        provided_attributes = provided_attributes.split(",")
+
+
+    reccomend_5 = '''
+    MATCH (a:Attribute)
+    WHERE (a.attribute IN {provided_attributes})
+    WITH collect(a) as subset
+    UNWIND subset as a
+    MATCH (a)-[r:COOCCURS_WITH]-(b)
+    WHERE NOT b in subset
+    RETURN b.attribute, sum(r.weight) as totalWeight
+    ORDER BY totalWeight DESC LIMIT 5
+    '''
+    reccomended_ = pd.DataFrame(graph.run(reccomend_5, provided_attributes=provided_attributes).data())
+    reccomended = list(reccomended_['b.attribute'])
+
+    return reccomended # a list of len 5 with the reccomended attributes closest match in pos 0
 
 
 
