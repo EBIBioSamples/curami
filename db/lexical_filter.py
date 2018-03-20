@@ -6,7 +6,7 @@ Takes all attributes and does fuzzy matching in an all by all pairwise fasion in
 
 '''
 import re, csv, sys, datetime, collections, ast, argparse, jellyfish, enchant, multiprocessing
-from py2neo import Node, Relationship, Graph, Path, authenticate
+from py2neo import Node, Relationship, Graph, Path, authenticate, NodeSelector
 from nltk.tokenize import wordpunct_tokenize
 from nltk.stem import WordNetLemmatizer
 # from nltk.tokenize import word_tokenize
@@ -503,6 +503,33 @@ def data_output(df):
 
 	result_df.to_csv('result_df.csv')
 
+def fill_attribute_graph(graph):
+    # graph.delete_all()
+    attribute_df = pd.read_csv('data/attributes.csv', usecols=['attribute', 'frequency'])
+    coexistence_df = pd.read_csv('data/coexistencesProb.csv', usecols=['attribute1','attribute2','totals','exp','diff','weight'])
+    freq_lookup_dict = dict(zip(attribute_df.attribute.values, attribute_df.frequency.values))
+
+    # create nodes
+    for attribute, frequency in freq_lookup_dict.items():
+        x = Node('Attribute', attribute=str(attribute), frequency=str(frequency))  # create cypher object
+        graph.merge(x, 'Attribute', 'attribute')  # merge is important to prevent duplicates
+
+    # create relationships
+    for index, row in coexistence_df.iterrows():
+        rel_type = 'COOCCURS_WITH'
+        try:
+            selector = NodeSelector(graph)
+            attrubute1_node = selector.select("Attribute", attribute=row.attribute1).first()
+            attrubute2_node = selector.select("Attribute", attribute=row.attribute2).first()
+            if (attrubute1_node != None
+            and attrubute2_node != None
+            and row.totals != None
+            and row.weight != None):
+                graph.merge(Relationship(attrubute1_node, rel_type, attrubute2_node, coexistance=row.totals, weight=row.weight))
+        except AttributeError:
+            print(index)
+            print(row)
+
 if __name__ == '__main__':
 # def run():
 
@@ -512,60 +539,63 @@ if __name__ == '__main__':
 	# generate pairs after first pass filter
 
 	try:
-		input_df3 = pd.read_csv('data/filtered_pairs.csv', usecols = ['attribute1','attribute2','levenshtein'], sep = '§', engine = 'python')
-		df = pd.read_csv('data/attributes.csv', usecols = ['attribute', 'frequency'])
-		freq_lookup_dict = dict(zip(df.attribute.values, df.frequency.values))
-
+		# input_df3 = pd.read_csv('data/filtered_pairs.csv', usecols = ['attribute1','attribute2','levenshtein'], sep = '§', engine = 'python')
+		# df = pd.read_csv('data/attributes.csv', usecols = ['attribute', 'frequency'])
+		# freq_lookup_dict = dict(zip(df.attribute.values, df.frequency.values))
+		fill_attribute_graph(graph)
 
 	except FileNotFoundError:
+		print('file not found')
 
-		print(datetime.datetime.now())
-		print('Running all by all fuzzy match. This process takes ~15 min for 26,000 x 26,000 attributes on an 8 core machine.')
+	# except FileNotFoundError:
 
-		input_df = pd.DataFrame(columns= ['attribute1', 'attribute2', 'levenshtein'])
-		df = pd.read_csv('data/attributes.csv', usecols = ['attribute', 'frequency'])
-		freq_lookup_dict = dict(zip(df.attribute.values, df.frequency.values))
+	# 	print(datetime.datetime.now())
+	# 	print('Running all by all fuzzy match. This process takes ~15 min for 26,000 x 26,000 attributes on an 8 core machine.')
 
-		all_pairs = tuple(list(df['attribute']))
+	# 	input_df = pd.DataFrame(columns= ['attribute1', 'attribute2', 'levenshtein'])
+	# 	df = pd.read_csv('data/attributes.csv', usecols = ['attribute', 'frequency'])
+	# 	freq_lookup_dict = dict(zip(df.attribute.values, df.frequency.values))
 
-		pool = multiprocessing.Pool()
-		result = pool.map(multithread_fuzz, all_pairs)
-		input_df = input_df.append(result)
+	# 	all_pairs = tuple(list(df['attribute']))
 
-		# check result
+	# 	pool = multiprocessing.Pool()
+	# 	result = pool.map(multithread_fuzz, all_pairs)
+	# 	input_df = input_df.append(result)
 
-		# print(input_df)
-		input_df2 = input_df[['attribute1', 'attribute2', 'levenshtein']]
-		# input_df2.to_csv('input_df.csv', columns= ['attribute1', 'attribute2', 'levenshtein'], sep = '§') # just a test
+	# 	# check result
 
-		print(datetime.datetime.now())
-		print('Fuzzy matched ' + str(input_df2.shape[0]) + ' pairs out of ' + str((df.shape[0] ** 2)-df.shape[0]) + ' possible pairs')
+	# 	# print(input_df)
+	# 	input_df2 = input_df[['attribute1', 'attribute2', 'levenshtein']]
+	# 	# input_df2.to_csv('input_df.csv', columns= ['attribute1', 'attribute2', 'levenshtein'], sep = '§') # just a test
 
-		# remove duplicates
+	# 	print(datetime.datetime.now())
+	# 	print('Fuzzy matched ' + str(input_df2.shape[0]) + ' pairs out of ' + str((df.shape[0] ** 2)-df.shape[0]) + ' possible pairs')
 
-		print('Removing duplicates') 
-		input_df3 = input_df2[['attribute1','attribute2']].dropna(how='any').T.apply(sorted).T.drop_duplicates().reset_index(drop=True)
-		print('Removed ' + str(input_df2.shape[0] - input_df3.shape[0]) + ' out of ' + str(input_df2.shape[0]))
+	# 	# remove duplicates
 
-		input_df3.to_csv('data/filtered_pairs.csv', columns= ['attribute1', 'attribute2', 'levenshtein'], sep = '§')
+	# 	print('Removing duplicates') 
+	# 	input_df3 = input_df2[['attribute1','attribute2']].dropna(how='any').T.apply(sorted).T.drop_duplicates().reset_index(drop=True)
+	# 	print('Removed ' + str(input_df2.shape[0] - input_df3.shape[0]) + ' out of ' + str(input_df2.shape[0]))
 
-
-	# filtering and adding Pair nodes to graph
-
-	results = issue_filter(input_df3)
-	results_df = results[0]
-	not_all_count = results[1]
-	count_notcamelcase = results[2]
-	count_camelcase = results[3]
+	# 	input_df3.to_csv('data/filtered_pairs.csv', columns= ['attribute1', 'attribute2', 'levenshtein'], sep = '§')
 
 
-	# writing out some data
+	# # filtering and adding Pair nodes to graph
 
-	print('not_all_count:'+ str(not_all_count)+ ' out of '+ str(results_df.shape[0]))
-	print('count_camelcase:'+ str(count_camelcase)+ ' out of ' + str(results_df.shape[0]))
-	print('count_notcamelcase:'+ str(count_notcamelcase)+ ' out of ' + str(results_df.shape[0]))
+	# results = issue_filter(input_df3)
+	# results_df = results[0]
+	# not_all_count = results[1]
+	# count_notcamelcase = results[2]
+	# count_camelcase = results[3]
 
-	data_output(results_df)
+
+	# # writing out some data
+
+	# print('not_all_count:'+ str(not_all_count)+ ' out of '+ str(results_df.shape[0]))
+	# print('count_camelcase:'+ str(count_camelcase)+ ' out of ' + str(results_df.shape[0]))
+	# print('count_notcamelcase:'+ str(count_notcamelcase)+ ' out of ' + str(results_df.shape[0]))
+
+	# data_output(results_df)
 
 
 

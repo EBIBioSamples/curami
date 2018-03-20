@@ -189,7 +189,9 @@ def prince_mca(X, facet1n2_sample_ids, facet1_sample_ids, facet2_sample_ids, pai
 	row_principal_coordinates.loc[row_principal_coordinates.index.isin(facet1n2_sample_ids), 'Attribute'] = 'both'
 
 	# adds column describing spot frequency for depth visualisation
-	row_principal_coordinates['s'] = row_principal_coordinates.groupby(['x','y']).transform('count')
+	# row_principal_coordinates['s'] = row_principal_coordinates.groupby(['x','y']).transform('count')
+	print(row_principal_coordinates.groupby(['x','y']).transform('count'))
+	sys.exit()
 
 	# # To see data input
 	# print(row_principal_coordinates)

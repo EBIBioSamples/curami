@@ -132,7 +132,7 @@ def api_samples(parms):
 
 		json.dump(all_attributes, fp)
 
-@fn_timer
+# @fn_timer
 def multithread_crawler(pointer):
 	# Crawler script- get me a list of keys for every sample.
 
@@ -143,6 +143,14 @@ def multithread_crawler(pointer):
 		"size": pageSize,
 	}
 	rel = requests.get(pointer, params=query_params)
+	if rel.status_code is not 200:
+		print('Something wrong happening in Multithread Crawler. Error code '
+					+ str(rel.status_code)
+					+ ' At '
+					+ str(time.asctime(time.gmtime(time.time())))
+					)
+		sys.exit()
+		
 	reply = rel.json()
 	totalPageNumer = reply['page']['totalPages']
 
@@ -390,8 +398,9 @@ def combine_json():
 
 if __name__ == "__main__":
 
-	# pointer = 'http://wwwdev.ebi.ac.uk/biosamples/beta/samples'
-	pointer = 'http://scooby.ebi.ac.uk:8081/biosamples/beta/samples'
+	pointer = 'http://wwwdev.ebi.ac.uk/biosamples/samples'
+	# pointer = 'http://scooby.ebi.ac.uk:8081/biosamples/beta/samples'
+	# pointer = 'https://www.ebi.ac.uk/biosamples/samples'
 
 	# data data sub dir if it doesn't exist
 	try:
