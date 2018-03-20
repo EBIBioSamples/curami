@@ -1,5 +1,7 @@
 *.pyc
 *.log
-/backend/data
-/backend/CurationDB
+/db/data
+/db/CurationDB
+/database/data
+/database/CurationDB
 .DS_Store
