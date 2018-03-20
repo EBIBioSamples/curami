@@ -1,5 +1,6 @@
 # from .models import User, get_todays_recent_posts, get_pairs, get_samples, get_last_coexistance_update, get_last_autocluster_update, get_last_lexical_update, get_last_values_update, get_num_samples_processed
 from .models import *
+from .reccomendation import *
 from flask import Flask, request, session, redirect, url_for, render_template, flash
 import sys
 
@@ -96,7 +97,6 @@ def logout():
     flash('Logged out.')
     return redirect(url_for('index'))
 
-
 @app.route('/attribute_curation/<username>', methods=['GET', 'POST'])
 def attribute_curator_home(username):
     logged_in_username = session.get('username')
@@ -164,7 +164,6 @@ def attribute_curator_home(username):
         ) 
     else:
         return redirect(url_for('login'))
-
 
 @app.route('/attribute_curation/<username>/<int:pair_id>', methods=['GET','POST'])
 def attribute_curation_pair(pair_id, username):
