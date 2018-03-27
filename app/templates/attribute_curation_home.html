@@ -122,12 +122,35 @@
 <div class="container">
     <div class="row">
         <div class="col-md-6">
-			<p>Welcome to the Pairwise Attribute Curator. As you make suggestions you can check back here to see your progress. Good luck!</p>
+			<p>Welcome to the Pairwise Attribute Curator. As you make suggestions you can check back here to see your progress.</p>
+			<p>If you are interested in curation of a particular domain or specialism please follow the 'Specialist Curation' link to fill out details to help Curami point you to curations in your area of expertise. Alternatively, you can begin curation of the whole BioSamples database by following the 'Begin Curating' button. </p>
 		</div>
-		<div class="col-md-6 text-center row">
+		<div class="col-md-6 text-center">
+			<div class="col-xs-12">
 				<form action="{{ url_for('attribute_curator_home', pair_id=pair_id, username=username) }}" method="POST">
 		    		<input class="btn btn-primary btn-lg text-center" id="start_button" type="submit" name="initial" value="Begin Curating">
 				</form>
+			</div>
+			{% if specialism_attributes == false %}
+
+			<div class="col-xs-12">
+				<form action="{{ url_for('specialist_curator', username=username) }}" method="GET">
+		    		<input class="btn btn-primary btn-lg text-center" id="start_button" type="submit" name="initial" value="Specialist Curation">
+				</form>
+			</div>
+
+			{% else %}
+
+			<div class="col-xs-12">
+				<form action="{{ url_for('specialist_curator', username=username) }}" method="GET">
+		    		<input class="btn btn-warning btn-sm text-center" id="start_button" type="submit" name="initial" value="Reset Specialism Attributes">
+				</form>
+			</div>
+
+			{% endif %}
+
+
+				
 		</div>
 	</div>
 </div>
