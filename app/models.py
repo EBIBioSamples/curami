@@ -28,7 +28,8 @@ class User:
                 email=email,
                 organisation=organisation,
                 sort_type='smart',
-                vioscreen_stop='No')
+                vioscreen_stop='No',
+                specialism_attributes=False)
             graph.create(user)
             return True
         else:
@@ -533,7 +534,7 @@ def current_settings(username):
     selector = NodeSelector(graph)
     selection = selector.select("User", username = username)
     user_node = selection.first()
-    return (user_node['sort_type'], user_node['vioscreen_stop'])
+    return (user_node['sort_type'], user_node['vioscreen_stop'], user_node['specialism_attributes'])
 
 
 def reccomend(provided_attributes):
@@ -560,8 +561,36 @@ def reccomend(provided_attributes):
     return reccomended # a list of len 5 with the reccomended attributes closest match in pos 0
 
 
+def change_specialist_attributes(username, edits):
 
+    # if list passed directly then go for it, if edit dict passed parse first
 
+    if type(edits) is list:
+        edits = list(set(edits)) # drop duplicates
+        user_attributes = edits
+
+    elif type(edits) is dict:
+        # parsing edit dict to list
+        edits.pop('resub') # form submission as python dict
+
+        # list from dict after strip False, keep True, swap suggestions
+        user_attributes = []
+        for key, value in edits.items():
+            if value == 'False':
+                continue
+            elif value == 'True':
+                user_attributes.append(key)
+            else:
+                user_attributes.append(value)
+        user_attributes = list(set(user_attributes)) # drop duplicates
+
+    print('User Attributes sent to Neo4J: {}'.format(user_attributes))
+
+    selector = NodeSelector(graph)
+    selection = selector.select("User", username = username)
+    user_node = selection.first()
+    user_node['specialism_attributes'] = user_attributes
+    graph.push(user_node)
 
 
 

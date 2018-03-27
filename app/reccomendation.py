@@ -11,7 +11,6 @@ This is separated out because it is slightly heavier to look at the attributes b
 
 input needed from app: provided_attributes_str = 'longitude, lngtude'
 
-
 '''
 
 import pandas as pd
@@ -22,9 +21,43 @@ graph = Graph('http://localhost:7474/db/data', user='neo4j', password='neo5j')
 username = os.environ.get('NEO4J_USERNAME')
 password = os.environ.get('NEO4J_PASSWORD')
 
-def reccomend_suggest(provided_attributes_str, check_exist=False):
 
-    def reccomend_5(provided_attributes): # returns the nearest 5 attributes to the list of provided attributes
+'''
+This function takes a list of attributes and checks if they exist in the dataset
+'''
+def all_attributes():
+
+        get_all = '''
+        MATCH (a:Attribute)
+        RETURN a.attribute
+        '''
+
+        df = pd.DataFrame(graph.run(get_all).data())
+        attribute_list = set(df['a.attribute'])
+        return attribute_list
+
+def DYM(provided_attributes):
+
+    attribute_set = all_attributes()
+
+
+    DYM_suggestions = dict()
+
+    for query_attribute in provided_attributes:
+        if query_attribute not in attribute_set:
+            DYM_suggestion = difflib.get_close_matches(query_attribute, attribute_set) # DYM_suggestion is a list with multiple close matches
+            if len(DYM_suggestion) == 0: # if no close matches are found
+                DYM_suggestion = False
+            elif len(DYM_suggestion) > 3:
+                DYM_suggestion = DYM_suggestion[0:3]
+        else:
+            DYM_suggestion = True # if the provided attribute is in the dataset (so no suggestions needed)
+        DYM_suggestions[query_attribute] = DYM_suggestion
+
+    return DYM_suggestions
+
+
+def reccomend_5(provided_attributes): # returns the nearest 5 attributes to the list of provided attributes
 
         reccomend_5 = '''
         MATCH (a:Attribute)
@@ -36,51 +69,10 @@ def reccomend_suggest(provided_attributes_str, check_exist=False):
         RETURN b.attribute, sum(r.weight) as totalWeight
         ORDER BY totalWeight DESC LIMIT 5
         '''
-        reccomended = pd.DataFrame(graph.run(reccomend_5, provided_attributes=provided_attributes).data())
+        reccomended_df = pd.DataFrame(graph.run(reccomend_5, provided_attributes=provided_attributes).data())
+        reccomended = list(reccomended_df['b.attribute'])
 
         return reccomended
-
-    def all_attributes():
-
-        get_all = '''
-        MATCH (a:Attribute)
-        RETURN a.attribute
-        '''
-
-        df = pd.DataFrame(graph.run(get_all).data())
-        attribute_list = set(df['a.attribute'])
-        return attribute_list
-
-    def find_suggestion(all_attribute_set, query_attribute):
-        suggestions = difflib.get_close_matches(query_attribute, all_attribute_set)
-        return suggestions
-
-
-    provided_attributes = provided_attributes_str.split(",")
-
-    # returns a dict of suggestions if any of the attributes dont exist in the dataset
-    if check_exist == True:
-        all_attribute_set = all_attributes()
-        DYM_suggestions = dict()
-        for query_attribute in provided_attributes:
-            if query_attribute not in all_attribute_set:
-                DYM_suggestion = find_suggestion(all_attribute_set, query_attribute)
-                DYM_suggestions[query_attribute] = DYM_suggestion
-        return DYM_suggestions
-
-    reccomended_df = reccomend(provided_attributes) # returns a df
-    reccomended = list(reccomended_df['b.attribute'])
-    return (DYM_suggestions, reccomended)
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -1,0 +1,135 @@
+{% extends "layout.html" %}
+{% block body %}
+
+{% if input_len == 'all good' %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h2>Set Curation Specialism</h2>
+            <b>Thanks</b>
+            <p>You're all set! Now Curami can walk you through attributes that are relevent to the ones you provided. Via the <i>Settings</i> cog you now have the option to find attributes that are 'close' to those you have just provided (we call this <i>defined specialism hopping</i>) or you can expand your scope dynamically as you provide curations (we call this <i>dynamic specialism hopping</i>). You can change this at any time from the <i>Pairwise Attribute Curator</i> homepage.
+
+        	<p>Dynamic selections will not factor in any if the attributes that you skip. So if you find pairs that fall outside your expertise just skip these.</p>
+        </div>
+
+        <div class="col-md-6 offset-md-3">
+			<form action="{{ url_for('attribute_curator_home', pair_id=pair_id, username=username) }}" method="POST">
+	    		<input class="btn btn-primary btn-lg text-center" id="start_button" type="submit" name="initial" value="Begin Curating">
+			</form>
+		</div>
+    </div>
+</div>
+
+
+{% elif input_len > 0 %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h2>Set Curation Specialism</h2>
+            <b>Some of the attributes you provided aren't in the analysis dataset. Please correct and resubmit.</b>
+            <form action="{{ url_for('specialist_curator', username=session.username) }}" method="POST">
+	            {% for attribute, value in DYM_suggestions.items() %}
+	            	<div class="row">
+	            		<br>
+	            		<table>	
+	            			<tbody>
+	            				<tr>
+	  					            {% if value == True %}
+
+	  					            	<input type="hidden" name={{attribute}} value=True></input>
+						            	<td style="width:40px">
+								            <i class="fa fa-check fa-2x" style="color:green" aria-hidden="true"></i>
+								        </td>
+
+					            		<td style="width:150px">
+								            {{attribute}}
+								        </td>
+								        <td style="width:400px">
+								        </td>
+
+				     
+						            {% elif value == False %}
+
+						            	<input type="hidden" name="{{attribute}}" value=False></input>
+
+							            <td style="width:40px">
+								            <i class="fa fa-question fa-2x" style="color:red" aria-hidden="true"></i>
+								        </td>
+
+					            		<td style="width:150px">
+								            {{attribute}}
+								        </td>
+								        <td style="width:400px">
+								        	<i>No suggestions</i>
+								        </td>
+
+
+									{% else %}
+
+							            <td style="width:40px">
+								            <i class="fa fa-magic fa-2x" aria-hidden="true"></i>
+								        </td>
+
+					            		<td style="width:150px">
+								            {{attribute}}
+								        </td>
+								        <td style="width:400px">
+								        	<div class="slight"><i>Did you mean?</i></div>
+								        	<div>
+								        	{% for suggestion in value %}
+								        	<label class="radio-inline space-right"><input type="radio" name="{{attribute}}"" value="{{suggestion}}">{{suggestion}}</label>
+								        	{% endfor %}
+									        </div>
+									        <div><label class="radio-inline"><input type="radio" name="{{attribute}}" value=False checked> None of the above</label></div>
+								        </td>
+
+
+						            {% endif %}
+	            				</tr>	
+			            	</tbody>
+			            </table>
+			        </div>
+			   {% endfor %}
+			<!-- <input type="hidden" name="DYM_suggestions" value={{DYM_suggestions.items()}}></input> -->
+			<input class="btn btn-primary text-center" type="submit" name="resub" value="Resubmit">
+			
+			</form>
+
+
+
+        </div>
+
+    </div>
+</div>
+
+
+
+{% else %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h2>Set Curation Specialism</h2>
+            <form action="{{ url_for('specialist_curator', username=session.username) }}" method="POST">
+                    <dt>Enter a list of BioSamples attributes relevent to your field (one per line):</dt>
+                    <br>
+                    <textarea type="text" class="form-control" name="relevant_attributes">Latitiude, longitude, depth</textarea>
+                    <br>
+	                <input class="btn btn-primary text-center" type="submit" value="Check">
+            </form>
+        </div>
+
+        <div class="col-md-6 offset-md-3">
+        	<p><b>What is this doing?</b></p>
+        	<p>First Curami will check if these attributes exist in the dataset. If not, it will suggest lexically similar attributes that you can then select. When you have provided a list of attributes, they will be used as an anchor point and other attributes that are frequently used alongside those provided will be prioritised when you are curating. In this way you can edit the attributes that are the most relevant to you.</p>
+        </div>
+
+    </div>
+</div>
+
+{% endif %}
+
+
+{% endblock %}

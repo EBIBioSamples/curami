@@ -3,6 +3,7 @@ from .models import *
 from .reccomendation import *
 from flask import Flask, request, session, redirect, url_for, render_template, flash
 import sys
+from werkzeug.datastructures import ImmutableMultiDict
 
 app = Flask(__name__)
 
@@ -110,6 +111,7 @@ def attribute_curator_home(username):
         settings = current_settings(username_tag)
         sort_type = settings[0]
         vioscreen_stop = settings[1]
+        specialism_attributes = settings[2]
         
         profile_info = profile_stats(logged_in_username)
         all_pairs_curated = profile_info[0]
@@ -150,7 +152,6 @@ def attribute_curator_home(username):
             elif form_dict.get('initial') == 'Begin Curating':
                 return redirect(url_for('attribute_curation_pair', pair_id=pair_id, username=username_tag))
 
-
         return render_template('attribute_curation_home.html',
         username=username,
         pair_id=pair_id,
@@ -160,14 +161,15 @@ def attribute_curator_home(username):
         SUGGESTED_REVERSEMERGE_decisions=SUGGESTED_REVERSEMERGE_decisions,
         TOTAL_MERGE=TOTAL_MERGE,
         sort_type=sort_type,
-        vioscreen_stop=vioscreen_stop
+        vioscreen_stop=vioscreen_stop,
+        specialism_attributes=specialism_attributes
         ) 
     else:
         return redirect(url_for('login'))
 
 @app.route('/attribute_curation/<username>/<int:pair_id>', methods=['GET','POST'])
 def attribute_curation_pair(pair_id, username):
-# def attribute_curation_pair(pair_id, username):
+    # def attribute_curation_pair(pair_id, username):
 
     logged_in_username = session.get('username')
     settings = current_settings(logged_in_username)
@@ -282,17 +284,58 @@ def attribute_curation_pair(pair_id, username):
         else:
             return redirect(url_for('login'))
 
+@app.route('/specialist_curator/<username>', methods=['GET', 'POST'])
+def specialist_curator(username):
+    username_tag = session.get('username')
+    if username_tag:
+
+        settings = current_settings(username_tag)
+        sort_type = settings[0]
+        vioscreen_stop = settings[1]
+
+        node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop)
+        pair_id = node_info[1]
+
+        if request.method == 'POST':
+
+            if request.form.get('resub') == 'Resubmit': # edited submission
+                edits_ = request.form # class 'werkzeug.datastructures.ImmutableMultiDict'
+                edits = edits_.to_dict()
+                change_specialist_attributes(username_tag, edits)
+
+                return render_template('specialist_curator.html', username=username_tag, input_len='all good', pair_id=pair_id)
 
 
-# @app.route('/attribute_curation/<int:pair_id>', methods=['POST'])
-# def attribute_curation_pair(pair_id):
 
-#     logged_in_username = session.get('username')
-#     if logged_in_username:
+                
+            else:
+
+                relevant_attributes = request.form.get('relevant_attributes')
+                '''
+                YOU ARE HERE: Trying to get info from the form and send them to the well done sorted page
+                after that we need to write a function to save the attributes to the user node as settings
+                then add the new sorting feature to the cog.
+                '''
 
 
-#     else:
-#         return redirect(url_for('login'))
+                if len(relevant_attributes) == 0: # deal with blank entry
+                    return render_template('specialist_curator.html', username=username_tag, input_len=0, pair_id=pair_id)
+                    
+                if len(relevant_attributes) > 0: # initial attribute submission
+                    input_len = len(relevant_attributes)
+                    provided_attributes_ = relevant_attributes.split(",")
+                    provided_attributes = [x.strip() for x in provided_attributes_]
+                    DYM_suggestions = DYM(provided_attributes)
+
+                    if all(value == True for value in DYM_suggestions.values()):
+                        return render_template('specialist_curator.html', username=username_tag, input_len='all good', pair_id=pair_id)
+
+                    return render_template('specialist_curator.html', username=username_tag, input_len=input_len, pair_id=pair_id, DYM_suggestions=DYM_suggestions)
+
+        else:
+            return render_template('specialist_curator.html', username=username_tag, input_len=0, pair_id=pair_id)
+    else:
+        return redirect(url_for('login'))
 
 @app.route('/documentation', methods=['GET'])
 def documentation():
