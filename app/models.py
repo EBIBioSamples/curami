@@ -1,16 +1,20 @@
 from py2neo import Graph, Node, Relationship, NodeSelector
 from passlib.hash import bcrypt
 from datetime import datetime
+import pandas as pd
 from flask import Flask, request, session, redirect, url_for, render_template, flash, abort
-import os, time
+import os, time, difflib
 import uuid
+
 
 # url = os.environ.get('GRAPHENEDB_URL', 'http://localhost:7474')
 # graph = Graph(url + '/db/data/', username=username, password=password)
 
 graph = Graph('http://localhost:7474/db/data', user='neo4j', password='neo5j')
-username = os.environ.get('NEO4J_USERNAME')
-password = os.environ.get('NEO4J_PASSWORD')
+# username = os.environ.get('NEO4J_USERNAME')
+# password = os.environ.get('NEO4J_PASSWORD')
+
+# user profile functions
 
 class User:
     def __init__(self, username):
@@ -51,6 +55,8 @@ def timestamp():
 def date():
     return datetime.now().strftime('%Y-%m-%d')
 
+# get DB info functions
+
 def get_pairs():
     query = '''
     MATCH (n:Pair) RETURN COUNT(n)
@@ -62,7 +68,6 @@ def get_samples():
     MATCH (n:Sample) RETURN COUNT(n)
     '''
     return graph.run(query).evaluate()
-
 
 def get_last_coexistance_update():
     query = '''
@@ -106,7 +111,6 @@ def get_last_lexical_update():
     time = str(time_[0] + '.' + time_[1])
     return (date, time)
 
-
 def get_last_values_update():
     query = '''
     MATCH (n) WHERE EXISTS(n.values_update_timestamp)
@@ -149,134 +153,6 @@ def get_num_samples_processed():
     coexistance_num_processed = graph.run(coexistance).evaluate()
 
     return (lexical_num_processed, autocluster_num_processed, values_num_processed, coexistance_num_processed)
-
-
-
-def cypher_200(sort_type, vioscreen_stop):
-
-    if sort_type == 'smart':
-        if vioscreen_stop == 'Yes':
-            fetch = '''
-            MATCH (p:Pair)
-            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
-            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
-            RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
-            LIMIT 200
-            '''
-            return graph.run(fetch)
-
-        else:
-            fetch = '''
-            MATCH (p:Pair)
-            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
-            RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
-            LIMIT 200
-            '''
-            return graph.run(fetch)
-
-    elif sort_type == 'max': # sorting in descending order by the facet with the least usage in the db
-        if vioscreen_stop == 'Yes':
-            fetch = '''
-            MATCH (p:Pair)
-            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
-            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
-            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
-            RETURN p, id(p),
-            CASE
-                WHEN BAD <= GOOD THEN BAD
-                ELSE GOOD
-            END
-            AS m
-            ORDER BY m DESC
-            LIMIT 200
-            '''
-            return graph.run(fetch)
-        else:
-            fetch = '''
-            MATCH (p:Pair)
-            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
-            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
-            RETURN p, id(p),
-            CASE
-                WHEN BAD <= GOOD THEN BAD
-                ELSE GOOD
-            END
-            AS m
-            ORDER BY m DESC
-            LIMIT 200
-            '''
-            return graph.run(fetch)
-
-    elif sort_type == 'major': # sorting in descending order by major attribute (highest sample usage)
-        if vioscreen_stop == 'Yes':
-            fetch = '''
-            MATCH (p:Pair)
-            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
-            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
-            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
-            RETURN p, id(p),
-            CASE
-                WHEN BAD >= GOOD THEN BAD
-                ELSE GOOD
-            END
-            AS m
-            ORDER BY m DESC
-            LIMIT 200
-            '''
-            return graph.run(fetch)
-        else:
-            fetch = '''
-            MATCH (p:Pair)
-            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
-            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
-            RETURN p, id(p),
-            CASE
-                WHEN BAD >= GOOD THEN BAD
-                ELSE GOOD
-            END
-            AS m
-            ORDER BY m DESC
-            LIMIT 200
-            '''
-            return graph.run(fetch)
-
-
-def fetch_initial_pair_nodes(sort_type, vioscreen_stop):
-
-    # this module is to fetch the initial cursor only doesnt require pair_id starting point
-
-    # mode advanced could ensure the user hasn't already curated them
-    # secondary order_by no. of samples affected
-
-    
-    cursor = cypher_200(sort_type, vioscreen_stop)
-
-    while cursor.forward():
-        record = cursor.current()
-        name = record['p']['name']
-        pair_id = record['id(p)']
-        return (name, pair_id) # with this indent it is only getting one for testing!!!!
-
-def get_next_pair_record(pair_id, sort_type, vioscreen_stop):
-
-    cursor = cypher_200(sort_type, vioscreen_stop)
-
-    node = get_pair_node(pair_id) # checks that the node exists
-    if node is None:
-        return 'Node not in database'
-    else:
-        current_pair_id = pair_id
-
-        while cursor.forward(): 
-            record = cursor.current()
-            next_pair_id = record['id(p)']
-            if current_pair_id == next_pair_id:
-                record = cursor.next()
-                next_pair_id = record['id(p)']
-
-            return (current_pair_id, next_pair_id)
-
-
 
 def get_all_record_info(pair_id):
 
@@ -336,65 +212,6 @@ def get_all_record_info(pair_id):
         })
 
     return pair_info
-
-
-def make_relationship(username, merge_node_id, rel_type, next_pair_id):
-
-    # rel_type should be SUGGESTED_MERGE or SUGGESTED_REVERSEMERGE or SUGGESTED_NOMERGE
-
-    selector = NodeSelector(graph)
-    selection = selector.select("User", username = username)
-    user_node = selection.first()
-    merge_node = graph.node(merge_node_id)
-
-    # TODO here the merge_node could be a Pair node or a Cluster node!
-
-    timestamp = time.time()
-    graph.merge(Relationship(user_node, rel_type, merge_node, timestamp=timestamp))
-    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username))
-
-
-def profile_stats(username_tag):
-
-    all_pairs_curated_ = '''
-    MATCH (n:User)-[r:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE]-(p:Pair)
-    WHERE n.username = {username_tag}
-    RETURN count(r)
-    '''
-    SUGGESTED_MERGE_decisions_ = '''
-    MATCH (n:User)-[r:SUGGESTED_MERGE]-(p:Pair)
-    WHERE n.username = {username_tag}
-    RETURN count(r)
-    '''
-    SUGGESTED_NOMERGE_decisions_ = '''
-    MATCH (n:User)-[r:SUGGESTED_NOMERGE]-(p:Pair)
-    WHERE n.username = {username_tag}
-    RETURN count(r)
-    '''
-    SUGGESTED_REVERSEMERGE_decisions_ = '''
-    MATCH (n:User)-[r:SUGGESTED_REVERSEMERGE]-(p:Pair)
-    WHERE n.username = {username_tag}
-    RETURN count(r)
-    '''
-
-    all_pairs_curated = graph.run(all_pairs_curated_, username_tag=username_tag).evaluate()
-    SUGGESTED_MERGE_decisions = graph.run(SUGGESTED_MERGE_decisions_, username_tag=username_tag).evaluate()
-    SUGGESTED_NOMERGE_decisions = graph.run(SUGGESTED_NOMERGE_decisions_, username_tag=username_tag).evaluate()
-    SUGGESTED_REVERSEMERGE_decisions = graph.run(SUGGESTED_REVERSEMERGE_decisions_, username_tag=username_tag).evaluate()
-
-    return(all_pairs_curated, SUGGESTED_MERGE_decisions, SUGGESTED_NOMERGE_decisions, SUGGESTED_REVERSEMERGE_decisions)
-
-
-def user_data_wipe(username): # unused at the moment
-
-    cypher = '''
-    MATCH (P:User)-[r]-()
-        WHERE P.username = {username}
-        DETACH DELETE r
-    '''
-    graph.run(cypher, username=username)
-
-
 
 def get_pair_node(pair_id): # returns a node
 
@@ -511,6 +328,193 @@ def get_last_decision(username, pairID):
 
     return last_decision
 
+def profile_stats(username_tag):
+
+    all_pairs_curated_ = '''
+    MATCH (n:User)-[r:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE]-(p:Pair)
+    WHERE n.username = {username_tag}
+    RETURN count(r)
+    '''
+    SUGGESTED_MERGE_decisions_ = '''
+    MATCH (n:User)-[r:SUGGESTED_MERGE]-(p:Pair)
+    WHERE n.username = {username_tag}
+    RETURN count(r)
+    '''
+    SUGGESTED_NOMERGE_decisions_ = '''
+    MATCH (n:User)-[r:SUGGESTED_NOMERGE]-(p:Pair)
+    WHERE n.username = {username_tag}
+    RETURN count(r)
+    '''
+    SUGGESTED_REVERSEMERGE_decisions_ = '''
+    MATCH (n:User)-[r:SUGGESTED_REVERSEMERGE]-(p:Pair)
+    WHERE n.username = {username_tag}
+    RETURN count(r)
+    '''
+
+    all_pairs_curated = graph.run(all_pairs_curated_, username_tag=username_tag).evaluate()
+    SUGGESTED_MERGE_decisions = graph.run(SUGGESTED_MERGE_decisions_, username_tag=username_tag).evaluate()
+    SUGGESTED_NOMERGE_decisions = graph.run(SUGGESTED_NOMERGE_decisions_, username_tag=username_tag).evaluate()
+    SUGGESTED_REVERSEMERGE_decisions = graph.run(SUGGESTED_REVERSEMERGE_decisions_, username_tag=username_tag).evaluate()
+
+    return(all_pairs_curated, SUGGESTED_MERGE_decisions, SUGGESTED_NOMERGE_decisions, SUGGESTED_REVERSEMERGE_decisions)
+
+# fetch nodes and next nodes
+
+def fetch_initial_pair_nodes(sort_type, vioscreen_stop, specialism_attributes):
+
+    # this module is to fetch the initial cursor only doesnt require pair_id starting point
+
+    # mode advanced could ensure the user hasn't already curated them
+    # secondary order_by no. of samples affected
+
+    if sort_type in ['smart', 'max', 'major']: # if non specialism sort
+        cursor = cypher_200(sort_type, vioscreen_stop)
+    elif sort_type in ['my_attributes', 'related_to_my_attributes', 'dynamic_specialism']:
+        cursor = main_sorter(sort_type, specialism_attributes)
+
+    # print('## cursor from cypher_200: {}'.format(cursor.evaluate()))
+
+    while cursor.forward():
+        record = cursor.current()
+        name = record['p']['name']
+        pair_id = record['id(p)']
+        return (name, pair_id) # with this indent it is only getting one for testing!!!!
+
+def cypher_200(sort_type, vioscreen_stop): # uses sort type to return a list of attributes
+
+    if sort_type == 'smart':
+        if vioscreen_stop == 'Yes':
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
+            RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
+            LIMIT 200
+            '''
+            return graph.run(fetch)
+
+        else:
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
+            LIMIT 200
+            '''
+            return graph.run(fetch)
+
+    elif sort_type == 'max': # sorting in descending order by the facet with the least usage in the db
+        if vioscreen_stop == 'Yes':
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD <= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+        else:
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD <= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+    elif sort_type == 'major': # sorting in descending order by major attribute (highest sample usage)
+        if vioscreen_stop == 'Yes':
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND NOT p.good_attribute =~ 'vioscreen.*' AND NOT p.bad_attribute =~ 'vioscreen.*'
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD >= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+        else:
+            fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            WITH toInteger(p.bad_facet_freq) as BAD, toInteger(p.good_facet_freq) AS GOOD, p
+            RETURN p, id(p),
+            CASE
+                WHEN BAD >= GOOD THEN BAD
+                ELSE GOOD
+            END
+            AS m
+            ORDER BY m DESC
+            LIMIT 200
+            '''
+    else:
+        print('Critical: unexpected sort_type')
+
+    print('## cypher_200\nfetch: {}\nvioscreen_stop: {}\nsort_type {}'.format(fetch, vioscreen_stop, sort_type))
+
+    return graph.run(fetch)
+
+def get_next_pair_record(pair_id, sort_type, vioscreen_stop, specialism_attributes):
+
+    if sort_type in ['smart', 'max', 'major']: # if non specialism sort
+        cursor = cypher_200(sort_type, vioscreen_stop)
+    elif sort_type in ['my_attributes', 'related_to_my_attributes', 'dynamic_specialism']:
+        cursor = main_sorter(sort_type, specialism_attributes)
+
+    node = get_pair_node(pair_id) # checks that the node exists
+    if node is None:
+        return 'Node not in database'
+    else:
+        current_pair_id = pair_id
+
+        while cursor.forward(): 
+            record = cursor.current()
+            next_pair_id = record['id(p)']
+            if current_pair_id == next_pair_id:
+                record = cursor.next()
+                next_pair_id = record['id(p)']
+
+            return (current_pair_id, next_pair_id)
+
+def make_relationship(username, merge_node_id, rel_type, next_pair_id):
+
+    # rel_type should be SUGGESTED_MERGE or SUGGESTED_REVERSEMERGE or SUGGESTED_NOMERGE
+
+    selector = NodeSelector(graph)
+    selection = selector.select("User", username = username)
+    user_node = selection.first()
+    merge_node = graph.node(merge_node_id)
+
+    # TODO here the merge_node could be a Pair node or a Cluster node!
+
+    timestamp = time.time()
+    graph.merge(Relationship(user_node, rel_type, merge_node, timestamp=timestamp))
+    return redirect(url_for('attribute_curation_pair', pair_id=next_pair_id, username=username))
+
+# settings functions
+
+def current_settings(username):
+    print('username is: {}'.format(username))
+    selector = NodeSelector(graph)
+    selection = selector.select("User", username = username)
+    user_node = selection.first()
+    return (user_node['sort_type'], user_node['vioscreen_stop'], user_node['specialism_attributes'])
+
 def change_sort_type(username, input_sort_type):
     # this is to save the sort_type setting on the user node if it changes
 
@@ -522,44 +526,16 @@ def change_sort_type(username, input_sort_type):
 
 def change_vioscreen_stop(username, input_vioscreen_stop):
     # this is to save the sort_type setting on the user node if it changes
-
+    # print('input_vioscreen_stop is: {}'.format(input_vioscreen_stop))
     selector = NodeSelector(graph)
+    # print('selector is: {}'.format(selector))
     selection = selector.select("User", username = username)
+    # print('selection is: {}'.format(selection))
     user_node = selection.first()
+    # print('user_node is: {}'.format(user_node))
     user_node['vioscreen_stop'] = input_vioscreen_stop
+    # print('user_node is: {}'.format(user_node))
     graph.push(user_node)
-
-
-def current_settings(username):
-    selector = NodeSelector(graph)
-    selection = selector.select("User", username = username)
-    user_node = selection.first()
-    return (user_node['sort_type'], user_node['vioscreen_stop'], user_node['specialism_attributes'])
-
-
-def reccomend(provided_attributes):
-
-    # takes a comma separated string or a list
-
-    if type(provided_attributes) == str:
-        provided_attributes = provided_attributes.split(",")
-
-
-    reccomend_5 = '''
-    MATCH (a:Attribute)
-    WHERE (a.attribute IN {provided_attributes})
-    WITH collect(a) as subset
-    UNWIND subset as a
-    MATCH (a)-[r:COOCCURS_WITH]-(b)
-    WHERE NOT b in subset
-    RETURN b.attribute, sum(r.weight) as totalWeight
-    ORDER BY totalWeight DESC LIMIT 5
-    '''
-    reccomended_ = pd.DataFrame(graph.run(reccomend_5, provided_attributes=provided_attributes).data())
-    reccomended = list(reccomended_['b.attribute'])
-
-    return reccomended # a list of len 5 with the reccomended attributes closest match in pos 0
-
 
 def change_specialist_attributes(username, edits):
 
@@ -591,6 +567,228 @@ def change_specialist_attributes(username, edits):
     user_node = selection.first()
     user_node['specialism_attributes'] = user_attributes
     graph.push(user_node)
+
+def user_data_wipe(username): # unused at the moment
+
+    cypher = '''
+    MATCH (P:User)-[r]-()
+        WHERE P.username = {username}
+        DETACH DELETE r
+    '''
+    graph.run(cypher, username=username)
+
+# Reccomendation functions
+
+def reccomend(provided_attributes):
+
+    # takes a comma separated string or a list
+
+    if type(provided_attributes) == str:
+        provided_attributes = provided_attributes.split(",")
+
+
+    reccomend_5 = '''
+    MATCH (a:Attribute)
+    WHERE (a.attribute IN {provided_attributes})
+    WITH collect(a) as subset
+    UNWIND subset as a
+    MATCH (a)-[r:COOCCURS_WITH]-(b)
+    WHERE NOT b in subset
+    RETURN b.attribute, sum(r.weight) as totalWeight
+    ORDER BY totalWeight DESC LIMIT 5
+    '''
+    reccomended_ = pd.DataFrame(graph.run(reccomend_5, provided_attributes=provided_attributes).data())
+    reccomended_.columns = ['attribute', 'totalWeight']
+    reccomended = list(reccomended_['attribute'])
+
+    return reccomended # a list of len 5 with the reccomended attributes closest match in pos 0
+
+def all_attributes(): # This function takes a list of attributes and checks if they exist in the dataset
+
+        get_all = '''
+        MATCH (a:Attribute)
+        RETURN a.attribute
+        '''
+
+        df = pd.DataFrame(graph.run(get_all).data())
+        attribute_list = set(df['a.attribute'])
+        return attribute_list
+
+def DYM(provided_attributes): # the 'did you mean' function
+
+    attribute_set = all_attributes()
+
+
+    DYM_suggestions = dict()
+
+    for query_attribute in provided_attributes:
+        if query_attribute not in attribute_set:
+            DYM_suggestion = difflib.get_close_matches(query_attribute, attribute_set) # DYM_suggestion is a list with multiple close matches
+            if len(DYM_suggestion) == 0: # if no close matches are found
+                DYM_suggestion = False
+            elif len(DYM_suggestion) > 3:
+                DYM_suggestion = DYM_suggestion[0:3]
+        else:
+            DYM_suggestion = True # if the provided attribute is in the dataset (so no suggestions needed)
+        DYM_suggestions[query_attribute] = DYM_suggestion
+
+    return DYM_suggestions
+
+def reccomend_500(provided_attributes): # returns ordered list 500 closest to user provided provided_attributes
+
+    fetch_reccomend_500 = '''
+    MATCH (a:Attribute)
+    WHERE (a.attribute IN {provided_attributes})
+    WITH collect(a) as subset
+    UNWIND subset as a
+    MATCH (a)-[r:COOCCURS_WITH]-(b)
+    WHERE NOT b in subset
+    RETURN b.attribute, sum(r.weight) as totalWeight
+    ORDER BY totalWeight DESC LIMIT 500
+    '''
+    reccomended = pd.DataFrame(graph.run(fetch_reccomend_500, provided_attributes=provided_attributes).data())
+    print('reccomended shape is: {}'.format(reccomended.shape))
+    reccomended.columns = ['attribute', 'totalWeight']
+    # print('type of reccomended is: {}'.format(type(reccomended)))
+    print('reccomended is:\n {}'.format(reccomended))
+    next500attributes = list(reccomended['attribute'])
+
+    # print('next500attributes is: {}'.format(next500attributes))
+
+    if len(next500attributes) == 0:
+        flash('Critical Error: no near attributes found')
+        print('Critical Error: no near attributes found')
+        return
+
+    return next500attributes
+
+def my_pairs_count(provided_attributes): # how many unexamined pairs exist that contian the users specialist attributes
+
+    pairs_left = 0
+
+    print('provided_attributes in my_pairs_count: {}'.format(provided_attributes))
+
+    for my_attribute in provided_attributes:
+
+        counter = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND p.good_attribute = {my_attribute}
+            OR p.bad_attribute = {my_attribute}
+            RETURN count(p)
+            '''
+        result = graph.run(counter, my_attribute=my_attribute).data()
+        count = result[0].get('count(p)')
+        pairs_left += count
+
+    return pairs_left
+
+def my_attributes_sort(provided_attributes): # a sorting function allows users to curate the pairs that directly relate to their samples
+    
+    print('provided_attributes in my_attributes_sort: {}'.format(provided_attributes))
+    pairs_left = my_pairs_count(provided_attributes)
+    provided_attributes = list(provided_attributes)
+
+    if pairs_left != 0:
+        fetch = '''
+            MATCH (p:Pair)
+            WHERE NOT (p:Pair)-[:SUGGESTED_MERGE|SUGGESTED_NOMERGE|SUGGESTED_REVERSEMERGE|SKIPPED]-()
+            AND p.good_attribute IN {provided_attributes}
+            AND p.good_attribute IN {provided_attributes}
+            RETURN p, id(p) ORDER BY p.pseudo_confidence DESC, p.name
+            LIMIT 200
+
+        '''
+        return graph.run(fetch, provided_attributes=provided_attributes)
+    else:
+        return None
+
+def related_to_my_attributes_sort(provided_attributes): # chunking  through nearest 5 attributes at a time returns pair nodes or skips to next chunk
+
+    nearest_500 = reccomend_500(provided_attributes)
+    chunk_size = 5
+    chunk_list = [nearest_500[x:x+chunk_size] for x in range(0, len(nearest_500), chunk_size)]
+
+    for chunk in chunk_list:
+        result = my_attributes_sort(chunk)
+        if result != None:
+            return my_attributes_sort(chunk)
+        else:
+            continue
+
+def previous_attributes(username_tag, good_attribute=False): # get 'bad' attributes by default a user has already merged
+    # note similar to function profile_stats
+
+    def go_get_previous_attributes(SUGGESTED_MERGE_decisions_, SUGGESTED_REVERSEMERGE_decisions_):
+        SUGGESTED_MERGE_decisions_df = pd.DataFrame(graph.run(SUGGESTED_MERGE_decisions_, username_tag=username_tag).data())
+        print('SUGGESTED_MERGE_decisions_df:\n {}'.format(SUGGESTED_MERGE_decisions_df))
+        if SUGGESTED_MERGE_decisions_df.empty:
+            SUGGESTED_MERGE_decisions = []
+        else:
+            SUGGESTED_MERGE_decisions_df.columns = ['attribute']
+            SUGGESTED_MERGE_decisions = list(SUGGESTED_MERGE_decisions_df['attribute'])
+
+        SUGGESTED_REVERSEMERGE_decisions_df = pd.DataFrame(graph.run(SUGGESTED_REVERSEMERGE_decisions_, username_tag=username_tag).data())
+        print('SUGGESTED_REVERSEMERGE_decisions_df:\n {}'.format(SUGGESTED_REVERSEMERGE_decisions_df))
+        if SUGGESTED_REVERSEMERGE_decisions_df.empty:
+            SUGGESTED_REVERSEMERGE_decisions = []
+        else:
+            SUGGESTED_REVERSEMERGE_decisions_df.columns = ['attribute']
+            SUGGESTED_REVERSEMERGE_decisions = list(SUGGESTED_REVERSEMERGE_decisions_df['attribute'])
+
+        return SUGGESTED_MERGE_decisions + SUGGESTED_REVERSEMERGE_decisions
+
+
+    if good_attribute == False: # will return bad attributes
+        SUGGESTED_MERGE_decisions_ = '''
+        MATCH (n:User)-[r:SUGGESTED_MERGE]-(p:Pair)
+        WHERE n.username = {username_tag}
+        RETURN p.bad_attribute
+        '''
+        SUGGESTED_REVERSEMERGE_decisions_ = '''
+        MATCH (n:User)-[r:SUGGESTED_REVERSEMERGE]-(p:Pair)
+        WHERE n.username = {username_tag}
+        RETURN p.good_attribute
+        '''
+
+    elif good_attribute == True: # will return good attrubutes
+        SUGGESTED_MERGE_decisions_ = '''
+        MATCH (n:User)-[r:SUGGESTED_MERGE]-(p:Pair)
+        WHERE n.username = {username_tag}
+        RETURN p.good_attribute
+        '''
+        SUGGESTED_REVERSEMERGE_decisions_ = '''
+        MATCH (n:User)-[r:SUGGESTED_REVERSEMERGE]-(p:Pair)
+        WHERE n.username = {username_tag}
+        RETURN p.bad_attribute
+        '''
+
+
+    return go_get_previous_attributes(SUGGESTED_MERGE_decisions_, SUGGESTED_REVERSEMERGE_decisions_)
+
+def dynamic_specialism_sort(provided_attributes, username):
+
+    # built like this incase the need for flexibility arrises in the future
+    previous_bad = previous_attributes(username, False)
+    previous_good = previous_attributes(username, True)
+    previous_all = set(previous_good + previous_bad + provided_attributes)
+    return my_attributes_sort(previous_all)
+
+def main_sorter(sort_type, provided_attributes): # uses sort type to return a list of attributes
+    
+    print('provided_attributes in main_sorter: {}'.format(provided_attributes))
+    
+    username = session.get('username')
+    change_vioscreen_stop(username, "No") # vioscreen_stop setting is switched off for this function even if it is on.
+
+    if sort_type == 'my_attributes': 
+        return my_attributes_sort(provided_attributes)
+
+    if sort_type == 'related_to_my_attributes':
+        return related_to_my_attributes_sort(provided_attributes)
+
+    if sort_type == 'dynamic_specialism': # previous bad and good attributes are added to the query for the reccomendation will likely need tweaking
+        return dynamic_specialism_sort(provided_attributes, username)
 
 
 

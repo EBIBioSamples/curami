@@ -1,6 +1,5 @@
 # from .models import User, get_todays_recent_posts, get_pairs, get_samples, get_last_coexistance_update, get_last_autocluster_update, get_last_lexical_update, get_last_values_update, get_num_samples_processed
 from .models import *
-from .reccomendation import *
 from flask import Flask, request, session, redirect, url_for, render_template, flash
 import sys
 from werkzeug.datastructures import ImmutableMultiDict
@@ -120,9 +119,6 @@ def attribute_curator_home(username):
         SUGGESTED_REVERSEMERGE_decisions = profile_info[3]
         TOTAL_MERGE = SUGGESTED_MERGE_decisions + SUGGESTED_REVERSEMERGE_decisions
 
-        node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop)
-        pair_id = node_info[1]
-
         if request.method == 'POST':
             form_dict = request.form.to_dict()
             print(form_dict , file=sys.stdout)
@@ -136,7 +132,6 @@ def attribute_curator_home(username):
                 if 'sort' in form_dict:
                     input_sort_type = form_dict.get('sort')
                     print('input_sort_type is: ' + str(input_sort_type), file=sys.stdout)
-                    print('input_sort_type is: ' + str(input_sort_type), file=sys.stdout)
                     if input_sort_type != sort_type: # to change user setting in Neo4J
                         change_sort_type(username, input_sort_type)
                         print('changed sort_type from ' + str(sort_type) + ' to ' + str(input_sort_type), file=sys.stdout)
@@ -145,16 +140,22 @@ def attribute_curator_home(username):
                     input_vioscreen_stop = form_dict.get('vioscreen_stop')
                     if input_vioscreen_stop != vioscreen_stop:
                         change_vioscreen_stop(username, input_vioscreen_stop)
+
+                node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop, specialism_attributes)
+                pair_id = node_info[1]
                 
                 return redirect(url_for('attribute_curation_pair', pair_id=pair_id, username=username_tag))
 
                 
             elif form_dict.get('initial') == 'Begin Curating':
+                change_sort_type(username, 'smart') # reset to smart
+                node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop, specialism_attributes)
+                pair_id = node_info[1]
                 return redirect(url_for('attribute_curation_pair', pair_id=pair_id, username=username_tag))
 
         return render_template('attribute_curation_home.html',
         username=username,
-        pair_id=pair_id,
+        # pair_id=pair_id,
         all_pairs_curated=all_pairs_curated,
         SUGGESTED_MERGE_decisions=SUGGESTED_MERGE_decisions,
         SUGGESTED_NOMERGE_decisions=SUGGESTED_NOMERGE_decisions,
@@ -175,8 +176,9 @@ def attribute_curation_pair(pair_id, username):
     settings = current_settings(logged_in_username)
     sort_type = settings[0]
     vioscreen_stop = settings[1]
+    specialism_attributes = settings[2]
 
-    results = get_next_pair_record(pair_id, sort_type, vioscreen_stop)
+    results = get_next_pair_record(pair_id, sort_type, vioscreen_stop, specialism_attributes)
 
     if results == 'Node not in database':
         abort(404)
@@ -292,8 +294,9 @@ def specialist_curator(username):
         settings = current_settings(username_tag)
         sort_type = settings[0]
         vioscreen_stop = settings[1]
+        specialism_attributes = settings[2]
 
-        node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop)
+        node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop, specialism_attributes)
         pair_id = node_info[1]
 
         if request.method == 'POST':
@@ -304,10 +307,7 @@ def specialist_curator(username):
                 change_specialist_attributes(username_tag, edits)
 
                 return render_template('specialist_curator.html', username=username_tag, input_len='all good', pair_id=pair_id)
-
-
-
-                
+        
             else:
 
                 relevant_attributes = request.form.get('relevant_attributes')
@@ -346,11 +346,9 @@ def documentation():
     else:
         return redirect(url_for('login'))
 
-
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
-
 
 @app.route('/test', methods=['GET', 'POST'])
 def page_test():

@@ -12,11 +12,8 @@
 			<p>So far you have made decisions on <b>{{ all_pairs_curated }}</b> attributes. You suggested merging <b>{{ TOTAL_MERGE }}/{{ all_pairs_curated }}</b> attributes and decided not to merge <b>{{ SUGGESTED_NOMERGE_decisions }}/{{ all_pairs_curated }}</b> attributes.</p>
 		</div>
 		<div class="col-md-3 text-center row">
-				<form action="{{ url_for('attribute_curator_home', pair_id=pair_id, username=username) }}" method="POST">
+			<form action="{{ url_for('attribute_curator_home', pair_id=pair_id, username=username) }}" method="POST">
 			    	<input class="btn btn-primary btn-lg text-center" id="start_button" type="submit" name="initial" value="Continue Curating">
-
-						
-
 		</div>
 
 		<div class="col-md-3 text-center row">
@@ -31,10 +28,10 @@
 					</div>
 					<div class="panel-body">
 
-
+						{% if specialism_attributes == false %}
 
 							{% if sort_type == 'smart' %}
-							<div class="btn-group btn-group-toggle" data-toggle="buttons">
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
 							  <label class="btn btn-secondary active">
 							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
 							  </label>
@@ -44,9 +41,10 @@
 							  <label class="btn btn-secondary" >
 							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
 							  </label>
+
 							</div>
 							{% elif sort_type == 'max' %}
-							<div class="btn-group btn-group-toggle" data-toggle="buttons">
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
 							  <label class="btn btn-secondary ">
 							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
 							  </label>
@@ -59,7 +57,7 @@
 							</div>
 
 							{% elif sort_type == 'major' %}
-							<div class="btn-group btn-group-toggle" data-toggle="buttons">
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
 							  <label class="btn btn-secondary ">
 							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
 							  </label>
@@ -70,9 +68,146 @@
 							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
 							  </label>
 							</div>
+							{% endif %}
 
+
+						{% else %}
+
+							{% if sort_type == 'smart' %}
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
+							  <label class="btn btn-secondary active">
+							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
+							  </label>
+							  <label class="btn btn-secondary">
+							    <input type="radio" name="sort" id="option2" value="max" autocomplete="off" > Max Sample Impact
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option4" value="my_attributes" autocomplete="off" > My Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option5" value="related_to_my_attributes" autocomplete="off" > Related Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option6" value="dynamic_specialism" autocomplete="off" > Wider Related Attributes
+							  </label>
+							</div>
+
+							{% elif sort_type == 'max' %}
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
+							  <label class="btn btn-secondary">
+							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
+							  </label>
+							  <label class="btn btn-secondary active">
+							    <input type="radio" name="sort" id="option2" value="max" autocomplete="off" > Max Sample Impact
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option4" value="my_attributes" autocomplete="off" > My Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option5" value="related_to_my_attributes" autocomplete="off" > Related Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option6" value="dynamic_specialism" autocomplete="off" > Wider Related Attributes
+							  </label>
+							</div>
+
+							{% elif sort_type == 'major' %}
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
+							  <label class="btn btn-secondary">
+							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
+							  </label>
+							  <label class="btn btn-secondary ">
+							    <input type="radio" name="sort" id="option2" value="max" autocomplete="off" > Max Sample Impact
+							  </label>
+							  <label class="btn btn-secondary active" >
+							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option4" value="my_attributes" autocomplete="off" > My Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option5" value="related_to_my_attributes" autocomplete="off" > Related Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option6" value="dynamic_specialism" autocomplete="off" > Wider Related Attributes
+							  </label>
+							</div>
+
+							{% elif sort_type == 'my_attributes' %}
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
+							  <label class="btn btn-secondary">
+							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
+							  </label>
+							  <label class="btn btn-secondary ">
+							    <input type="radio" name="sort" id="option2" value="max" autocomplete="off" > Max Sample Impact
+							  </label>
+							  <label class="btn btn-secondary " >
+							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
+							  </label>
+							  <label class="btn btn-secondary active" >
+							    <input type="radio" name="sort" id="option4" value="my_attributes" autocomplete="off" > My Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option5" value="related_to_my_attributes" autocomplete="off" > Related Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option6" value="dynamic_specialism" autocomplete="off" > Wider Related Attributes
+							  </label>
+							</div>
+
+							{% elif sort_type == 'related_to_my_attributes' %}
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
+							  <label class="btn btn-secondary">
+							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
+							  </label>
+							  <label class="btn btn-secondary ">
+							    <input type="radio" name="sort" id="option2" value="max" autocomplete="off" > Max Sample Impact
+							  </label>
+							  <label class="btn btn-secondary " >
+							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
+							  </label>
+							  <label class="btn btn-secondary " >
+							    <input type="radio" name="sort" id="option4" value="my_attributes" autocomplete="off" > My Attributes
+							  </label>
+							  <label class="btn btn-secondary active" >
+							    <input type="radio" name="sort" id="option5" value="related_to_my_attributes" autocomplete="off" > Related Attributes
+							  </label>
+							  <label class="btn btn-secondary" >
+							    <input type="radio" name="sort" id="option6" value="dynamic_specialism" autocomplete="off" > Wider Related Attributes
+							  </label>
+							</div>
+
+							{% elif sort_type == 'dynamic_specialism' %}
+							<div class="btn-group btn-group-toggle btn-group-vertical" data-toggle="buttons">
+							  <label class="btn btn-secondary">
+							    <input type="radio" name="sort" id="option1" value="smart" autocomplete="off" > Smart Sorting
+							  </label>
+							  <label class="btn btn-secondary ">
+							    <input type="radio" name="sort" id="option2" value="max" autocomplete="off" > Max Sample Impact
+							  </label>
+							  <label class="btn btn-secondary " >
+							    <input type="radio" name="sort" id="option3" value="major" autocomplete="off" > Major Attributes
+							  </label>
+							  <label class="btn btn-secondary " >
+							    <input type="radio" name="sort" id="option4" value="my_attributes" autocomplete="off" > My Attributes
+							  </label>
+							  <label class="btn btn-secondary " >
+							    <input type="radio" name="sort" id="option5" value="related_to_my_attributes" autocomplete="off" > Related Attributes
+							  </label>
+							  <label class="btn btn-secondary active" >
+							    <input type="radio" name="sort" id="option6" value="dynamic_specialism" autocomplete="off" > Wider Related Attributes
+							  </label>
+							</div>
 
 							{% endif %}
+
+						{% endif %}
 							
 							<div> Omit 'vioscreen' attributes?
 							{% if vioscreen_stop == 'Yes' %}
@@ -107,6 +242,12 @@
 
 
 							</form>
+
+							<div class="col-md-3 text-center row">
+								<form action="{{ url_for('specialist_curator', username=username) }}" method="GET">
+						    		<input class="btn btn-warning btn-sm text-center" type="submit" value="Reset Specialism Attributes">
+								</form>
+							</div>
 
 
 					
