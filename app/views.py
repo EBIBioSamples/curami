@@ -142,9 +142,13 @@ def attribute_curator_home(username):
                         change_vioscreen_stop(username, input_vioscreen_stop)
 
                 node_info = fetch_initial_pair_nodes(sort_type, vioscreen_stop, specialism_attributes)
-                pair_id = node_info[1]
-                
-                return redirect(url_for('attribute_curation_pair', pair_id=pair_id, username=username_tag))
+                print('node_info: {}'.format(node_info))
+                if node_info == 'nopairs':
+                    return render_template('204.html')
+
+                else:
+                    pair_id = node_info[1]
+                    return redirect(url_for('attribute_curation_pair', pair_id=pair_id, username=username_tag))
 
                 
             elif form_dict.get('initial') == 'Begin Curating':
@@ -178,10 +182,16 @@ def attribute_curation_pair(pair_id, username):
     vioscreen_stop = settings[1]
     specialism_attributes = settings[2]
 
+    if pair_id == 'nopairs':
+        return render_template('204.html')
+        
+
     results = get_next_pair_record(pair_id, sort_type, vioscreen_stop, specialism_attributes)
 
     if results == 'Node not in database':
         abort(404)
+
+
 
     else:
         if logged_in_username:

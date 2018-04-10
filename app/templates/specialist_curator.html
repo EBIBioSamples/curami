@@ -113,7 +113,7 @@
         <div class="col-md-6 offset-md-3">
             <h2>Set Curation Specialism</h2>
             <form action="{{ url_for('specialist_curator', username=session.username) }}" method="POST">
-                    <dt>Enter a list of BioSamples attributes relevent to your field (one per line):</dt>
+                    <dt>Enter a comma separated list of BioSamples attributes relevent to your field:</dt>
                     <br>
                     <textarea type="text" class="form-control" name="relevant_attributes">Latitiude, longitude, depth</textarea>
                     <br>

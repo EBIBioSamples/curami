@@ -372,13 +372,17 @@ def fetch_initial_pair_nodes(sort_type, vioscreen_stop, specialism_attributes):
     elif sort_type in ['my_attributes', 'related_to_my_attributes', 'dynamic_specialism']:
         cursor = main_sorter(sort_type, specialism_attributes)
 
-    # print('## cursor from cypher_200: {}'.format(cursor.evaluate()))
+    print('## cursor from cypher_200/main_sorter: {}'.format(cursor.evaluate()))
 
     while cursor.forward():
         record = cursor.current()
+        # print('### record from cypher_200/main_sorter: {}'.format(record.data()))
         name = record['p']['name']
+        # print('### name from cypher_200/main_sorter: {}'.format(name))
         pair_id = record['id(p)']
+        # print('### pair_id from cypher_200/main_sorter: {}'.format(pair_id))
         return (name, pair_id) # with this indent it is only getting one for testing!!!!
+    return('nopairs')
 
 def cypher_200(sort_type, vioscreen_stop): # uses sort type to return a list of attributes
 
@@ -477,6 +481,7 @@ def get_next_pair_record(pair_id, sort_type, vioscreen_stop, specialism_attribut
         cursor = main_sorter(sort_type, specialism_attributes)
 
     node = get_pair_node(pair_id) # checks that the node exists
+    # print('Node from get_next_pair_record is {}'.format(node))
     if node is None:
         return 'Node not in database'
     else:
@@ -685,7 +690,7 @@ def my_pairs_count(provided_attributes): # how many unexamined pairs exist that 
 
 def my_attributes_sort(provided_attributes): # a sorting function allows users to curate the pairs that directly relate to their samples
     
-    print('provided_attributes in my_attributes_sort: {}'.format(provided_attributes))
+    # print('provided_attributes in my_attributes_sort: {}'.format(provided_attributes))
     pairs_left = my_pairs_count(provided_attributes)
     provided_attributes = list(provided_attributes)
 
@@ -776,12 +781,12 @@ def dynamic_specialism_sort(provided_attributes, username):
 
 def main_sorter(sort_type, provided_attributes): # uses sort type to return a list of attributes
     
-    print('provided_attributes in main_sorter: {}'.format(provided_attributes))
+    # print('provided_attributes in main_sorter: {}'.format(provided_attributes))
     
     username = session.get('username')
     change_vioscreen_stop(username, "No") # vioscreen_stop setting is switched off for this function even if it is on.
 
-    if sort_type == 'my_attributes': 
+    if sort_type == 'my_attributes':
         return my_attributes_sort(provided_attributes)
 
     if sort_type == 'related_to_my_attributes':

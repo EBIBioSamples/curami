@@ -1,0 +1,6 @@
+{% extends "layout.html" %}
+{% block title %}Page Not Found{% endblock %}
+{% block body %}
+  <h1>204: No Content</h1>
+  <p>You have curated all the available pairs with your current sort settings. <a href="{{ url_for('attribute_curator_home', username=session.username) }}">Change your settings to continue.</a></p>
+{% endblock %}
