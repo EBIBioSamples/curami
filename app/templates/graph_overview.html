@@ -17,7 +17,7 @@
 
     <div class="container">
       <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-4">
           <p><b>Lexical pair filtering {{ '%0.0f'| format(lexical_num_processed / num_pairs * 100) }}%</b></p>
             <div class="progress">
               <div class="progress-bar" role="progressbar" aria-valuenow="{{ '%0.0f'| format(lexical_num_processed / num_pairs * 100) }}"
@@ -27,7 +27,7 @@
             <p><b>{{ lexical_num_processed }}</b>/{{ num_pairs }}</p>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4">
           <p><b>Pair value comparisons {{ '%0.0f'| format(values_num_processed / num_pairs * 100) }}%</b></p>
             <div class="progress">
                 <div class="progress-bar" role="progressbar" aria-valuenow="{{ '%0.0f'| format(values_num_processed / num_pairs * 100) }}"
@@ -38,7 +38,7 @@
         </div>
 
 
-        <div class="col-md-3">
+        <div class="col-md-4">
           <p><b>Coexistance calculations {{ '%0.0f'| format(coexistance_num_processed / num_pairs * 100) }}%</b></p>
             <div class="progress">
                 <div class="progress-bar" role="progressbar" aria-valuenow="{{ '%0.0f'| format(coexistance_num_processed / num_pairs * 100) }}"
@@ -49,7 +49,7 @@
         </div>
 
 
-        <div class="col-md-3">
+<!--         <div class="col-md-3">
           <p><b>Clustering calculations {{ '%0.0f'| format(autocluster_num_processed / num_pairs * 100) }}%</b></p>
 
             <div class="progress">
@@ -58,7 +58,7 @@
                 </div>
             </div>
             <p><b>{{ autocluster_num_processed }}</b>/{{ num_pairs }}</p>
-        </div>
+        </div> -->
 
 
       </div>
@@ -69,22 +69,22 @@
 
     <div class="container">
       <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-4">
           <p><b>Lexical pair filtering</b></p>
           <p>{{ lexical_last_update_date }}</b> at {{ lexical_last_update_time }}</p>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <p><b>Pair value comparisons</b></p>
           <p>{{ values_last_update_date }} at {{ values_last_update_time }}</p>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <p><b>Coexistance calculations</b></p>
           <p>{{ coexistance_last_update_date }} at {{ coexistance_last_update_time }}</p>
         </div>
-        <div class="col-md-3">
+<!--         <div class="col-md-3">
           <p><b>Clustering calculations</b></p>
           <p>{{ autocluster_last_update_date }} at {{ autocluster_last_update_time }}</p>
-        </div>
+        </div> -->
 
 
     	</div>

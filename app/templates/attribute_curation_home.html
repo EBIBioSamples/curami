@@ -11,6 +11,8 @@
         <div class="col-md-6">
 			<p>So far you have made decisions on <b>{{ all_pairs_curated }}</b> attributes. You suggested merging <b>{{ TOTAL_MERGE }}/{{ all_pairs_curated }}</b> attributes and decided not to merge <b>{{ SUGGESTED_NOMERGE_decisions }}/{{ all_pairs_curated }}</b> attributes.</p>
 		</div>
+
+
 		<div class="col-md-3 text-center row">
 			<form action="{{ url_for('attribute_curator_home', pair_id=pair_id, username=username) }}" method="POST">
 			    	<input class="btn btn-primary btn-lg text-center" id="start_button" type="submit" name="initial" value="Continue Curating">
@@ -245,7 +247,7 @@
 
 							<div class="col-md-3 text-center row">
 								<form action="{{ url_for('specialist_curator', username=username) }}" method="GET">
-						    		<input class="btn btn-warning btn-sm text-center" type="submit" value="Reset Specialism Attributes">
+						    		<input class="btn btn-warning btn-sm text-center" type="submit" value="Set Specialism Attributes">
 								</form>
 							</div>
 
@@ -284,7 +286,7 @@
 
 			<div class="col-xs-12">
 				<form action="{{ url_for('specialist_curator', username=username) }}" method="GET">
-		    		<input class="btn btn-warning btn-sm text-center" id="start_button" type="submit" name="initial" value="Reset Specialism Attributes">
+		    		<input class="btn btn-warning btn-sm text-center" id="start_button" type="submit" name="initial" value="Set Specialism Attributes">
 				</form>
 			</div>
 
@@ -297,7 +299,18 @@
 </div>
 {% endif %}
 
+{% if specialism_attributes != false %}
+<div class="row">
+	<p>Your selected specialism attributes are: 
 
+		{% for attribute in specialism_attributes %}
+			<b>{{ attribute }}</b>
+			{% if not loop.last %},
+			{% endif %}
+		{% endfor %}
+	</p>
+</div>
+{% endif %}
 
 
 
