@@ -68,7 +68,6 @@ The app requires the following files:
 2. samples.csv csv with sampleID followed by all the attributes that sample contains
 3. coexistences.csv which is used by *graph_make.py* list of all pairs that coexist and the frequency at which they do so
 4. values.json list of dictionaries for each attribute. Each dictionary contains a dictionary with associated values and frequency of use.
-5.
 
 ### backend/make_input.py
 crawls the BioSamples API and produces these input files. This script can take a few hours to run depending on your connection speed. You can edit the endpoint by changing the 'pointer' variable in this script. With one crawl all the information is captured (attribute information, value information and co-occurance counting).
