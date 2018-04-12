@@ -1,6 +1,6 @@
 # Curami: a BioSamples curation application
 
-** A semi-automated curation tool to identify and harmonise erroneous attributes in the BioSamples database.**
+**A semi-automated curation tool to identify and harmonise erroneous attributes in the BioSamples database.**
 
 See github  <https://github.com/EBIBioSamples/curami> for the current repo.
 
