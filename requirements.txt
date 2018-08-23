@@ -1,81 +1,45 @@
-# requirements
-
-## assumed to be present:
-
-### python3 itself
-### sys
-### os
-### math
-### re
-### timeit
-
-## third party:
-
-multiprocessing
-requests
-string
-itertools
-json
-collections
-pprint as pp
-time
-functools
-pathlib
-pandas as pd
-glob
-from operator import add
-numpy as np
-
-### Lexical module
-
-future
-pyenchant
-fuzzywuzzy
-validator
-progressbar2
-six
-nltk  # note other modules needed
-matplotlib
-tqdm
-datetime
-
-### Analysis module
-
-networkx as nx
-matplotlib import pylab
-matplotlib.pyplot as plt
-from py2neo import Node, Relationship, Graph, Path, authenticate
-argparse
-
-#### Value Script before rewrite
-
-csv
-ast
-jellyfish
-scipy.stats as stats
-dateutil.parser import parse
-from itertools import combinations, product
-jellyfish.\_jellyfish as py\_jellyfish
-
-
-#### Cluster Script
-
-from functools import wraps
-seaborn as sns
-plotly.plotly as py
-plotly.figure_factory as ff
-plotly 
-prince
-sklearn
-sklearn.decomposition import PCA
-scipy.spatial.distance import pdist
-sklearn.cluster import AffinityPropagation
-scipy.cluster.hierarchy import dendrogram, linkage, cophenet, fcluster
-
-#### Webapp
-
-bcrypt
-
-
-
-
+appnope==0.1.0
+atomicwrites==1.1.5
+attrs==18.1.0
+backcall==0.1.0
+certifi==2018.8.13
+click==6.7
+colorama==0.3.9
+decorator==4.3.0
+Flask==1.0.2
+ipykernel==4.8.2
+ipython==6.5.0
+ipython-genutils==0.2.0
+itsdangerous==0.24
+jedi==0.12.1
+Jinja2==2.10
+jupyter-client==5.2.3
+jupyter-console==5.2.0
+jupyter-core==4.4.0
+MarkupSafe==1.0
+more-itertools==4.3.0
+neo4j-driver==1.6.1
+neotime==1.0.0
+numpy==1.15.1
+pandas==0.23.4
+parso==0.3.1
+passlib==1.7.1
+pexpect==4.6.0
+pickleshare==0.7.4
+pluggy==0.7.1
+prompt-toolkit==1.0.15
+ptyprocess==0.6.0
+py==1.5.4
+py2neo==4.1.0
+Pygments==2.2.0
+pytest==3.7.2
+python-dateutil==2.7.3
+pytz==2018.5
+pyzmq==17.1.2
+simplegeneric==0.8.1
+six==1.11.0
+tornado==5.1
+traitlets==4.3.2
+urllib3==1.22
+wcwidth==0.1.7
+Werkzeug==0.14.1
